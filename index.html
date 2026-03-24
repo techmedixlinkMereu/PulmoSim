@@ -2,571 +2,1053 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PNEUMO·VR v18 — neumAC R&I</title>
-<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<title>PNEUMO·VR — Surgical Planning System · neumAC R&I</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <style>
-:root{
-  --bg:#010406;--panel:rgba(2,7,14,0.95);
-  --bdr:rgba(0,160,120,0.11);--bdr2:rgba(0,160,120,0.22);
-  --teal:#00c8a8;--teal2:#00f0d0;
-  --blue:#0a7aff;--red:#ff2244;--amber:#ff9900;
-  --purple:#9955ff;--green:#00e87a;--warn:#ff5500;
-  --text:#b8d8d0;--dim:#183028;--dim2:#0c1c18;
-  --mono:'JetBrains Mono',monospace;--head:'Oxanium',sans-serif;
-  --panel-w:210px;--rp-w:188px;--bro-w:410px;
+/* ============================================================
+   PNEUMO·VR SURGICAL — Design System v20
+   Aesthetic: Clinical Precision · Obsidian + Surgical Teal
+   ============================================================ */
+:root {
+  --bg:       #080c10;
+  --surface:  #0c1218;
+  --surface2: #111820;
+  --surface3: #161e28;
+  --border:   rgba(255,255,255,0.055);
+  --border2:  rgba(255,255,255,0.09);
+  --teal:     #0ecfb0;
+  --teal2:    #2af5d8;
+  --teal-dim: rgba(14,207,176,0.12);
+  --blue:     #2080ff;
+  --blue-dim: rgba(32,128,255,0.12);
+  --red:      #f0364a;
+  --red-dim:  rgba(240,54,74,0.12);
+  --amber:    #f5a623;
+  --amber-dim:rgba(245,166,35,0.12);
+  --purple:   #8b5cf6;
+  --green:    #22d67a;
+  --text:     #c8d8e8;
+  --text2:    rgba(200,216,232,0.45);
+  --text3:    rgba(200,216,232,0.22);
+  --mono:     'DM Mono', monospace;
+  --head:     'Syne', sans-serif;
+  --serif:    'Instrument Serif', serif;
+  --panel-w:  224px;
+  --rp-w:     210px;
+  --bro-w:    420px;
+  --bar-h:    48px;
 }
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
-body{font-family:var(--mono);color:var(--text);cursor:none}
-#cur{position:fixed;width:13px;height:13px;border:1px solid var(--teal2);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .08s,height .08s;mix-blend-mode:screen}
-#cur::after{content:'';position:absolute;width:2px;height:2px;border-radius:50%;background:var(--teal2);top:50%;left:50%;transform:translate(-50%,-50%)}
-#cur.p{width:22px;height:22px;border-color:var(--red)}
-#cur.v{border-color:var(--blue)}
-#cur.f{border-color:var(--amber)}
-#cur.g{width:28px;height:28px;border-color:var(--purple);border-width:2px}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9990;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.018) 3px,rgba(0,0,0,.018) 6px)}
-#app{position:fixed;inset:0;display:flex;flex-direction:column}
-#tb{height:44px;background:var(--panel);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;z-index:200;position:relative}
-#tb::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal) 30%,var(--teal2) 50%,var(--teal) 70%,transparent);opacity:.4}
-.brand{font-family:var(--head);font-weight:900;font-size:15px;letter-spacing:6px;color:var(--teal2)}
-.brand b{color:var(--blue)}
-.brand sub{font-size:7px;color:var(--dim2);letter-spacing:1px;vertical-align:sub;background:rgba(0,160,120,.12);border:1px solid var(--bdr);border-radius:2px;padding:1px 4px;margin-left:4px}
-.tabs{display:flex;gap:2px}
-.tab{padding:5px 12px;font-family:var(--head);font-size:9px;font-weight:700;letter-spacing:2.5px;color:var(--dim2);cursor:pointer;border-radius:2px;border:1px solid transparent;transition:all .12s;user-select:none}
-.tab:hover:not(.on){color:var(--text);border-color:var(--bdr)}
-.tab.on{background:rgba(0,200,160,.07);border-color:rgba(0,200,160,.25);color:var(--teal2)}
-.tb-stats{display:flex;gap:14px}
-.ts{text-align:center}
-.tsl{font-size:5px;letter-spacing:2.5px;color:var(--dim2);text-transform:uppercase;margin-bottom:1px}
-.tsv{font-family:var(--head);font-size:13px;font-weight:700;color:var(--teal);letter-spacing:.5px;line-height:1;transition:color .2s}
-.spill{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.5);border:1px solid var(--bdr);border-radius:20px;padding:4px 10px}
-.sdot{width:5px;height:5px;border-radius:50%;background:var(--dim2);transition:all .3s}
-.sdot.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2.2s infinite}
-.sdot.w{background:var(--amber)}.sdot.r{background:var(--red)}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.spillt{font-size:7px;letter-spacing:1.5px}
-#views{flex:1;display:flex;overflow:hidden;position:relative}
-#ext-view{flex:1;position:relative;min-width:0}
-#c-ext{width:100%;height:100%;display:block}
-#ext-label{position:absolute;top:9px;left:11px;font-size:6px;letter-spacing:3px;color:rgba(0,160,120,.4);text-transform:uppercase;pointer-events:none;z-index:10;font-family:var(--head)}
-#scope-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:20}
-#bro-view{width:var(--bro-w);flex-shrink:0;position:relative;background:#000;overflow:hidden;border-left:1px solid var(--bdr)}
-#c-bro{width:100%;height:100%;display:block}
-#bro-vig{position:absolute;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse 66% 66% at 50% 50%,transparent 46%,rgba(0,0,0,.96) 70%,#000 100%)}
-#bro-hud{position:absolute;inset:0;pointer-events:none;z-index:10;padding:11px}
-.bh{position:absolute;font-size:7px;letter-spacing:.6px;color:rgba(0,220,180,.5);line-height:1.9}
-#bh-tl{top:12px;left:13px}#bh-tr{top:12px;right:13px;text-align:right}
-#bh-bl{bottom:50px;left:13px}#bh-br{bottom:50px;right:13px;text-align:right}
-#xhair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;pointer-events:none;z-index:11;opacity:.45}
-#xhair::before,#xhair::after{content:'';position:absolute;background:rgba(0,240,208,.5)}
-#xhair::before{width:1px;height:36px;left:50%;transform:translateX(-50%)}
-#xhair::after{width:36px;height:1px;top:50%;transform:translateY(-50%)}
-.xr{position:absolute;top:50%;left:50%;border-radius:50%;transform:translate(-50%,-50%);border:1px solid rgba(0,240,208,.35)}
-.xr1{width:11px;height:11px}.xr2{width:26px;height:26px;border-color:rgba(0,240,208,.15)}
-#dbar{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:2px;height:48%;background:rgba(255,255,255,.04);border-radius:2px;z-index:10}
-#dfill{width:100%;background:linear-gradient(to top,var(--teal),var(--blue));border-radius:2px;transition:height .06s;height:0%;position:absolute;bottom:0}
-#defl-ind{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);pointer-events:none;z-index:12}
-#defl-canvas{width:80px;height:80px;opacity:.7}
-#palert{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) translateY(60px);background:rgba(12,0,3,.93);border:1px solid var(--red);border-radius:2px;padding:8px 18px;font-size:8px;letter-spacing:2.5px;color:var(--red);font-family:var(--head);font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;text-align:center;white-space:nowrap}
-#palert.show{opacity:1}
-#aring{position:absolute;top:50%;left:50%;width:0;height:0;border:2px solid var(--purple);border-radius:50%;opacity:0;transition:width .16s,height .16s,opacity .16s;pointer-events:none;z-index:15;transform:translate(-50%,-50%)}
-#aring.show{width:60px;height:60px;opacity:.7}
-#aring.fire{width:84px;height:84px;border-color:var(--amber);opacity:1}
-#hold-prog{position:absolute;top:50%;left:50%;width:64px;height:64px;transform:translate(-50%,-50%);pointer-events:none;z-index:16;opacity:0;transition:opacity .1s}
-#hold-prog.show{opacity:1}
-#hold-prog svg{width:64px;height:64px;transform:rotate(-90deg)}
-#hold-arc{fill:none;stroke:var(--purple);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:188;stroke-dashoffset:188;transition:stroke-dashoffset .05s}
-#bsel{position:absolute;inset:0;pointer-events:none;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:0 32px;opacity:0;transition:opacity .18s}
-#bsel.show{opacity:1}
-.bso{font-family:var(--head);font-size:18px;font-weight:800;letter-spacing:2px;padding:10px 16px;border-radius:2px;transition:all .12s;border:1px solid transparent}
-.bso.hi{background:rgba(0,200,160,.15);border-color:var(--teal2);color:var(--teal2)}
-.bso.lo{color:rgba(255,255,255,.12);border-color:rgba(255,255,255,.06)}
-#bsel-mid{color:rgba(0,200,160,.3);font-size:9px;letter-spacing:2px;font-family:var(--head);text-align:center}
-#lp{position:absolute;top:52px;left:8px;width:var(--panel-w);background:var(--panel);border:1px solid var(--bdr);border-left:2px solid var(--teal);border-radius:2px;backdrop-filter:blur(20px);z-index:50;overflow:hidden}
-.panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;cursor:pointer;user-select:none;border-bottom:1px solid var(--bdr)}
-.panel-hdr:hover{background:rgba(0,200,160,.03)}
-.ph-t{font-size:6px;letter-spacing:3px;color:var(--dim2);text-transform:uppercase;font-family:var(--head)}
-.ph-arr{font-size:10px;color:var(--dim2);transition:transform .2s}.ph-arr.open{transform:rotate(90deg)}
-.panel-body{padding:10px 12px}
-.grow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.gring{position:relative;width:44px;height:44px;flex-shrink:0}
-.gring svg{width:44px;height:44px;transform:rotate(-90deg)}
-.gr-bg{fill:none;stroke:rgba(255,255,255,.04);stroke-width:3}
-.gr-fg{fill:none;stroke:var(--teal);stroke-width:3;stroke-linecap:round;stroke-dasharray:120;stroke-dashoffset:120;transition:stroke-dashoffset .05s}
-.grv{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:8px;color:var(--teal);font-family:var(--head);font-weight:700}
-#gname{font-family:var(--head);font-size:20px;font-weight:800;color:var(--teal2);line-height:1}
-#gname.p{color:var(--red)}#gname.v{color:var(--blue)}#gname.f{color:var(--amber)}
-#gsub{font-size:7px;color:var(--dim2);margin-top:2px;min-height:12px}
-#gbadge{font-size:6px;letter-spacing:1.5px;color:var(--teal);margin-top:3px;background:rgba(0,200,160,.06);border:1px solid var(--bdr);border-radius:2px;padding:2px 6px;display:inline-block}
-#tracking-quality{font-size:6px;color:var(--amber);margin-top:4px;min-height:12px}
-.br{display:flex;justify-content:space-between;font-size:7px;margin:2px 0}
-.brl{color:var(--dim2)}.brv{color:var(--teal)}
-.btrack{height:2px;background:rgba(255,255,255,.04);border-radius:1px;overflow:hidden;margin-bottom:7px}
-.bf{height:100%;border-radius:1px;transition:width .05s}
-.bf.t{background:var(--teal)}.bf.b{background:var(--blue)}.bf.r{background:var(--red)}.bf.g{background:var(--green)}.bf.low{background:var(--warn)}
-.hrow{display:flex;align-items:center;gap:6px;margin:3px 0}
-.hl{font-size:7px;color:var(--dim2);width:50px}
-.ht{flex:1;height:2px;background:rgba(255,255,255,.04);border-radius:1px;overflow:hidden}
-.hf{height:100%;border-radius:1px;transition:width .04s;background:var(--green)}.hf.low{background:var(--warn)}
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-.fc{background:rgba(255,255,255,.015);border:1px solid rgba(0,200,160,.06);border-radius:2px;padding:7px}
-.fcl{font-size:6px;letter-spacing:2px;color:var(--dim2);margin-bottom:5px;font-family:var(--head)}
-.fbs{display:flex;gap:3px;align-items:flex-end}
-.fb{width:8px;border-radius:1px 1px 0 0;background:rgba(255,255,255,.05);transition:all .05s;min-height:3px}
-.fb.t{background:var(--teal);box-shadow:0 0 4px var(--teal)}.fb.b{background:var(--blue);box-shadow:0 0 4px var(--blue)}
-.fcg{font-size:7px;color:var(--teal);margin-top:4px}.fcg.b{color:var(--blue)}
-.gmap{margin-top:8px;font-size:7px;color:var(--dim2);line-height:2.1}
-.gmap span{color:var(--text)}
-#rp{position:absolute;top:52px;right:calc(var(--bro-w) + 8px);width:var(--rp-w);background:var(--panel);border:1px solid var(--bdr);border-right:2px solid var(--blue);border-radius:2px;backdrop-filter:blur(20px);z-index:50;overflow:hidden}
-.spos{font-size:7px;color:var(--amber);letter-spacing:1px;margin-bottom:6px;padding:0 12px}
-.cmg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 12px;margin-bottom:6px}
-.cmb{background:rgba(255,255,255,.02);border:1px solid rgba(0,200,160,.08);border-radius:2px;padding:7px 4px;text-align:center;cursor:pointer;color:var(--dim2);transition:all .12s;user-select:none}
-.cmb .ci{font-size:14px;margin-bottom:2px;display:block}
-.cmb .cl{font-size:6px;letter-spacing:1.5px;display:block;text-transform:uppercase}
-.cmb.on{background:rgba(153,85,255,.09);border-color:var(--purple);color:var(--purple)}
-.cmb:hover:not(.on){background:rgba(255,255,255,.03);color:var(--text)}
-.pi-item{display:flex;align-items:center;gap:5px;padding:4px 12px;border-bottom:1px solid rgba(255,255,255,.025);font-size:7px;color:var(--dim2)}
-.pid{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.pi-item.near{color:var(--text)}.pi-item.near .pid{animation:blink 1s infinite}
-.pdist{margin-left:auto;color:var(--teal);font-size:6px}
-#ann-list{max-height:72px;overflow-y:auto;padding:0 12px}
-.ai{font-size:7px;color:var(--teal);padding:2px 0;border-bottom:1px solid rgba(0,200,160,.05)}
-.ai span{color:var(--dim2)}
-#bpanel-l{position:absolute;bottom:8px;left:8px;width:var(--panel-w);background:var(--panel);border:1px solid var(--bdr);border-radius:2px;padding:9px 12px;backdrop-filter:blur(20px);z-index:50}
-.bst{font-size:6px;letter-spacing:3px;color:var(--dim2);text-transform:uppercase;margin-bottom:7px;font-family:var(--head)}
-.sr{display:flex;align-items:center;gap:6px;margin-bottom:3px}
-.sr label{font-size:7px;color:var(--dim2);width:62px}
-input[type=range]{flex:1;height:2px;-webkit-appearance:none;background:rgba(255,255,255,.07);border-radius:1px;cursor:pointer;outline:none}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height:8px;border-radius:50%;background:var(--teal)}
-.sv{font-size:7px;color:var(--teal);width:20px;text-align:right}
-#cam-p{position:absolute;bottom:8px;right:calc(var(--bro-w) + 8px);width:var(--rp-w);height:128px;border-radius:2px;overflow:hidden;border:1px solid var(--bdr);background:#000;z-index:50}
-#cvid{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:none}
-#ccan{position:absolute;top:0;left:0;width:100%;height:100%;transform:scaleX(-1)}
-.ctag{position:absolute;top:6px;left:8px;font-size:5px;letter-spacing:2.5px;color:rgba(0,160,120,.45);z-index:2;font-family:var(--head)}
-#gdbg{position:absolute;bottom:5px;left:6px;font-size:6px;color:var(--teal);z-index:3}
-#bi{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--bdr);border-radius:2px;padding:8px 20px;text-align:center;min-width:220px;pointer-events:none;z-index:50}
-#bi-l{font-size:5px;letter-spacing:3px;color:var(--dim2);text-transform:uppercase;font-family:var(--head)}
-#bi-v{font-family:var(--head);font-size:13px;font-weight:700;color:var(--teal);margin-top:2px;letter-spacing:2px}
-#bi-v.w{color:var(--amber)}#bi-v.r{color:var(--red)}
-#ct-overlay{position:absolute;bottom:14px;right:14px;width:72px;height:72px;pointer-events:none;z-index:12;opacity:.55}
-#ct-canvas{width:72px;height:72px}
-#toast{position:fixed;top:52px;left:50%;transform:translateX(-50%) translateY(-8px);background:rgba(0,8,6,.97);border:1px solid var(--teal);border-radius:2px;padding:6px 20px;font-family:var(--head);font-size:11px;font-weight:700;letter-spacing:3px;color:var(--teal2);z-index:900;opacity:0;pointer-events:none;transition:all .18s}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-#splash{position:fixed;inset:0;z-index:9000;background:radial-gradient(ellipse 90% 70% at 25% 45%,#040d18 0%,var(--bg) 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;overflow:hidden}
-.sey{font-size:7px;letter-spacing:7px;color:var(--dim2);text-transform:uppercase;font-family:var(--head)}
-.stitle{font-family:var(--head);font-size:clamp(46px,9vw,100px);font-weight:900;letter-spacing:2px;color:var(--teal2);line-height:.92}
-.stitle b{color:var(--blue)}
-.sver{font-size:8px;letter-spacing:4px;color:rgba(0,200,160,.4);text-transform:uppercase;font-family:var(--head);margin-top:4px}
-.sln{width:200px;height:1px;background:linear-gradient(90deg,transparent,var(--teal2),transparent);opacity:.35}
-.sdesc{color:#1e3c30;font-size:8px;max-width:460px;text-align:center;line-height:2.3}
-.sfeatures{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:540px}
-.sf{display:flex;flex-direction:column;align-items:center;gap:5px;background:rgba(0,200,160,.02);border:1px solid var(--bdr);border-radius:2px;padding:10px 8px;width:68px}
-.sfi{font-size:16px}.sfl{font-size:6px;letter-spacing:.7px;color:var(--dim2);text-align:center;line-height:1.5}
-#sbtn{background:transparent;border:1px solid var(--teal);color:var(--teal);font-family:var(--head);font-weight:700;font-size:10px;letter-spacing:7px;text-transform:uppercase;padding:13px 50px;border-radius:2px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;outline:none}
-#sbtn::before{content:'';position:absolute;inset:0;background:var(--teal);transform:translateX(-100%);transition:transform .18s}
-#sbtn:hover{color:#010406}#sbtn:hover::before{transform:translateX(0)}
-#sbtn span{position:relative;z-index:1}
-.snote{font-size:7px;letter-spacing:2px;color:var(--dim2)}
-#mode-sel{position:fixed;inset:0;z-index:8500;overflow:hidden;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center}
-#mode-sel::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,200,160,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,160,.04) 1px,transparent 1px);background-size:44px 44px;animation:gridShift 18s linear infinite}
-@keyframes gridShift{0%{transform:translate(0,0)}100%{transform:translate(44px,44px)}}
-.ms-header{position:relative;z-index:2;text-align:center;margin-bottom:28px}
-.ms-eyebrow{font-family:var(--mono);font-size:7.5px;letter-spacing:5px;color:rgba(0,200,160,.45);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px;justify-content:center}
-.ms-title{font-family:var(--head);font-size:40px;font-weight:900;letter-spacing:4px;color:#fff;line-height:1;margin-bottom:6px}
-.ms-title b{color:var(--teal2)}
-.ms-title .ms-ver{font-size:16px;color:rgba(0,200,160,.35);letter-spacing:2px;font-weight:400;margin-left:8px}
-.ms-sub{font-family:var(--mono);font-size:8px;letter-spacing:2px;color:rgba(255,255,255,.18);margin-top:4px}
-.ms-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:960px;width:90%;position:relative;z-index:2}
-.mc{background:rgba(255,255,255,.018);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:24px 18px 20px;cursor:pointer;transition:transform .2s,box-shadow .2s,background .2s;position:relative;overflow:hidden;text-align:center;user-select:none}
-.mc:hover{transform:translateY(-5px)}
-.mc.student{border-top:3px solid var(--blue)}.mc.resident{border-top:3px solid var(--teal2)}
-.mc.patient{border-top:3px solid #7ab4e8}.mc.instructor{border-top:3px solid var(--amber)}
-.mc.student:hover{box-shadow:0 12px 40px rgba(10,122,255,.18);background:rgba(10,122,255,.04)}
-.mc.resident:hover{box-shadow:0 12px 40px rgba(0,240,208,.15);background:rgba(0,240,208,.03)}
-.mc.patient:hover{box-shadow:0 12px 40px rgba(122,180,232,.15);background:rgba(122,180,232,.03)}
-.mc.instructor:hover{box-shadow:0 12px 40px rgba(255,153,0,.15);background:rgba(255,153,0,.03)}
-.mc-icon{font-size:30px;margin-bottom:12px;display:block}
-.mc-name{font-family:var(--head);font-size:11px;font-weight:800;letter-spacing:4px;text-transform:uppercase;margin-bottom:8px}
-.mc.student .mc-name{color:var(--blue)}.mc.resident .mc-name{color:var(--teal2)}
-.mc.patient .mc-name{color:#7ab4e8}.mc.instructor .mc-name{color:var(--amber)}
-.mc-desc{font-size:7.5px;color:rgba(255,255,255,.28);line-height:1.9;margin-bottom:14px;font-family:var(--mono)}
-.mc-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
-.mc-tag{font-size:5.5px;letter-spacing:1.5px;padding:3px 7px;border-radius:2px;border:1px solid;text-transform:uppercase;font-family:var(--head);font-weight:600}
-.mc.student .mc-tag{color:var(--blue);border-color:rgba(10,122,255,.25);background:rgba(10,122,255,.06)}
-.mc.resident .mc-tag{color:var(--teal2);border-color:rgba(0,240,208,.2);background:rgba(0,240,208,.05)}
-.mc.patient .mc-tag{color:#7ab4e8;border-color:rgba(122,180,232,.2);background:rgba(122,180,232,.05)}
-.mc.instructor .mc-tag{color:var(--amber);border-color:rgba(255,153,0,.2);background:rgba(255,153,0,.05)}
-.mc-lock{position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;border:1px solid}
-.mc.resident .mc-lock{color:var(--teal2);border-color:rgba(0,240,208,.3);background:rgba(0,240,208,.06)}
-.mc.instructor .mc-lock{color:var(--amber);border-color:rgba(255,153,0,.3);background:rgba(255,153,0,.06)}
-.ms-footer{position:relative;z-index:2;margin-top:18px;text-align:center}
-.ms-institution{font-family:var(--head);font-size:7px;letter-spacing:4px;color:rgba(0,200,160,.35);text-transform:uppercase;margin-bottom:4px}
-.ms-note{font-family:var(--mono);font-size:6px;letter-spacing:1px;color:rgba(255,255,255,.1)}
-@keyframes msCardIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-.mc{animation:msCardIn .4s ease both}
-.mc:nth-child(1){animation-delay:.06s}.mc:nth-child(2){animation-delay:.13s}
-.mc:nth-child(3){animation-delay:.20s}.mc:nth-child(4){animation-delay:.27s}
-#pin-overlay{position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.88);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center}
-#pin-overlay.show{display:flex}
-.pin-box{background:rgba(2,7,14,.99);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:32px 36px;text-align:center;min-width:280px}
-.pin-title{font-family:var(--head);font-size:10px;font-weight:700;letter-spacing:4px;color:var(--amber);margin-bottom:4px}
-.pin-sub{font-size:7px;color:rgba(255,255,255,.22);letter-spacing:1px;margin-bottom:20px;font-family:var(--mono)}
-.pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
-.pd{width:14px;height:14px;border-radius:50%;border:1px solid rgba(255,153,0,.25);background:transparent;transition:all .15s}
-.pd.fill{background:var(--amber);border-color:var(--amber);box-shadow:0 0 10px rgba(255,153,0,.5)}
-.pin-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.pk{padding:11px;font-family:var(--head);font-size:15px;font-weight:700;color:rgba(255,255,255,.65);background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:4px;cursor:pointer;transition:all .1s;user-select:none}
-.pk:hover{background:rgba(255,153,0,.08);border-color:rgba(255,153,0,.25);color:var(--amber)}
-.pk:active{transform:scale(.97)}
-.pin-err{font-size:7px;color:var(--red);margin-top:10px;height:14px;letter-spacing:1px}
-#mode-badge{display:flex;align-items:center;gap:7px;padding:4px 12px;border-radius:3px;border:1px solid;font-family:var(--head);font-size:7.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;cursor:pointer;transition:all .18s}
-#score-bar{position:fixed;top:44px;right:0;width:42px;background:rgba(1,4,6,.94);border-left:1px solid rgba(0,200,160,.08);z-index:60;display:none;flex-direction:column;align-items:center;gap:8px;padding:10px 4px;height:calc(100vh - 44px)}
-#score-bar.show{display:flex}
-.sb-item{text-align:center;width:100%}
-.sb-v{font-family:var(--head);font-size:11px;font-weight:800;color:var(--teal);line-height:1}
-.sb-l{font-size:4px;letter-spacing:1px;color:rgba(255,255,255,.15);text-transform:uppercase;margin-top:2px;font-family:var(--mono)}
-.sb-sep{width:24px;height:1px;background:rgba(255,255,255,.05)}
-.sb-contact{color:var(--amber)!important}
-#wall-flash{position:fixed;inset:0;pointer-events:none;z-index:400;opacity:0;background:radial-gradient(ellipse 100% 100% at 50% 50%,transparent 30%,rgba(200,10,10,.2) 70%,rgba(255,30,30,.42) 100%);transition:opacity .06s}
-/* ===== v18: SCOPE PHYSICS + TACTILE + BLEEDING (from v17) ===== */
-#tension-overlay{position:fixed;inset:0;pointer-events:none;z-index:395;opacity:0;transition:opacity .07s;background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 28%,rgba(0,28,18,.55) 60%,rgba(0,55,35,.85) 100%)}
-#tension-text{position:fixed;top:50%;left:50%;transform:translate(-50%,calc(-50% + 82px));pointer-events:none;z-index:396;opacity:0;transition:opacity .12s;font-family:var(--head);font-size:8px;font-weight:700;letter-spacing:4px;color:rgba(0,240,160,.75);text-shadow:0 0 14px rgba(0,200,120,.6);white-space:nowrap;text-align:center}
-#biopsy-bleed{position:fixed;inset:0;pointer-events:none;z-index:401;opacity:0;background:radial-gradient(ellipse 58% 58% at 50% 50%,rgba(210,5,5,.14) 0%,rgba(255,18,18,.4) 44%,transparent 66%);transition:opacity .08s}
-#scope-resistance-bar{position:absolute;bottom:92px;right:8px;width:3px;height:46px;background:rgba(255,255,255,.04);border-radius:2px;z-index:12;pointer-events:none}
-#scope-resistance-fill{width:100%;border-radius:2px;background:linear-gradient(to top,var(--green),var(--amber) 50%,var(--red));transition:height .05s;height:0%;position:absolute;bottom:0}
-#resistance-label{position:absolute;bottom:142px;right:2px;font-size:5px;letter-spacing:1px;color:rgba(0,200,160,.3);font-family:var(--head);writing-mode:vertical-rl;transform:rotate(180deg);pointer-events:none;z-index:12}
-@keyframes scopeShake{0%,100%{transform:translate(0,0)}15%{transform:translate(-2.5px,1.5px)}35%{transform:translate(2.2px,-2px)}55%{transform:translate(-1.5px,2.8px)}75%{transform:translate(2.5px,-1.2px)}90%{transform:translate(-1px,1.5px)}}
-.scope-shaking{animation:scopeShake .26s ease-out!important}
-/* ===== end v18 physics additions ===== */
-#seg-card{position:fixed;top:52px;right:calc(var(--bro-w) + 4px);width:196px;background:rgba(2,5,18,.97);border:1px solid rgba(10,122,255,.18);border-left:2px solid var(--blue);border-radius:4px;padding:14px;z-index:65;transform:translateX(14px);opacity:0;transition:transform .24s cubic-bezier(.22,1,.36,1),opacity .24s;pointer-events:none}
-#seg-card.show{transform:translateX(0);opacity:1;pointer-events:auto}
-#sc-gen{font-size:6px;letter-spacing:2.5px;color:rgba(10,122,255,.5);text-transform:uppercase;font-family:var(--head);margin-bottom:4px}
-#sc-name{font-family:var(--head);font-size:12px;font-weight:800;color:var(--blue);margin-bottom:2px;line-height:1.2}
-#sc-latin{font-size:6px;color:rgba(10,122,255,.4);letter-spacing:.5px;margin-bottom:10px;font-style:italic}
-#sc-body{font-size:7.5px;color:rgba(255,255,255,.32);line-height:1.9;font-family:var(--mono);margin-bottom:8px}
-#sc-pearl{padding:8px 10px;background:rgba(10,122,255,.06);border-left:2px solid rgba(10,122,255,.35);font-size:7px;color:rgba(10,122,255,.65);line-height:1.8;font-family:var(--mono)}
-#sc-dismiss{font-size:6px;color:rgba(255,255,255,.15);text-align:right;margin-top:8px;cursor:pointer}
-#sc-dismiss:hover{color:rgba(255,255,255,.35)}
-#instr-panel{position:fixed;top:44px;left:0;width:226px;background:rgba(2,5,12,.97);border-right:1px solid rgba(255,153,0,.1);border-bottom:1px solid rgba(255,153,0,.1);border-radius:0 0 4px 0;z-index:62;display:none}
-#instr-panel.show{display:block}
-.ip-hdr{padding:10px 14px;border-bottom:1px solid rgba(255,153,0,.08);display:flex;align-items:center;gap:8px}
-.ip-hdr-title{font-family:var(--head);font-size:7px;font-weight:700;letter-spacing:3px;color:var(--amber)}
-.live-pill{display:flex;align-items:center;gap:4px;background:rgba(255,34,68,.07);border:1px solid rgba(255,34,68,.18);border-radius:10px;padding:2px 7px;margin-left:auto}
-.live-dot{width:5px;height:5px;border-radius:50%;background:var(--red);animation:blink .7s infinite}
-.live-text{font-size:5.5px;letter-spacing:1px;color:var(--red)}
-.ip-metrics{display:grid;grid-template-columns:1fr 1fr;gap:0}
-.ip-m{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.025)}
-.ip-m:nth-child(even){border-left:1px solid rgba(255,255,255,.025)}
-.ip-ml{font-size:5.5px;letter-spacing:1.5px;color:rgba(255,255,255,.18);text-transform:uppercase}
-.ip-mv{font-family:var(--head);font-size:13px;font-weight:700;color:var(--teal);line-height:1.2}
-.ip-actions{padding:10px 14px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.03)}
-.ip-btn{padding:6px 10px;font-size:6.5px;letter-spacing:1.5px;font-family:var(--head);font-weight:700;border:1px solid;border-radius:3px;cursor:pointer;background:transparent;transition:all .12s;text-transform:uppercase}
-.ip-btn.amber{color:var(--amber);border-color:rgba(255,153,0,.25)}.ip-btn.amber:hover{background:rgba(255,153,0,.08)}
-.ip-btn.red{color:var(--red);border-color:rgba(255,34,68,.25)}.ip-btn.red:hover{background:rgba(255,34,68,.08)}
-.ip-btn.teal{color:var(--teal2);border-color:rgba(0,240,208,.25)}.ip-btn.teal:hover{background:rgba(0,240,208,.06)}
-#debrief{position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.9);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
-#debrief.show{display:flex}
-.db-box{background:#020810;border:1px solid rgba(0,240,208,.14);border-top:3px solid var(--teal2);border-radius:4px;width:700px;max-height:88vh;overflow-y:auto}
-.db-header{padding:24px 28px 16px;border-bottom:1px solid rgba(255,255,255,.04)}
-.db-institution{font-size:6.5px;letter-spacing:3px;color:rgba(0,200,160,.35);font-family:var(--mono);margin-bottom:8px}
-.db-title{font-family:var(--head);font-size:20px;font-weight:900;letter-spacing:4px;color:var(--teal2);margin-bottom:2px}
-.db-case{font-size:7.5px;color:rgba(255,255,255,.25);letter-spacing:1px;font-family:var(--mono)}
-.db-body{padding:20px 28px}
-.db-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
-.db-metric{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:4px;padding:14px 12px;text-align:center}
-.db-mv{font-family:var(--head);font-size:26px;font-weight:900;line-height:1}
-.db-ml{font-size:6px;letter-spacing:2px;color:rgba(255,255,255,.18);margin-top:5px;text-transform:uppercase;font-family:var(--mono)}
-.db-mv.good{color:var(--green)}.db-mv.warn{color:var(--amber)}.db-mv.bad{color:var(--red)}
-.db-section{margin-bottom:16px}
-.db-sh{font-size:6.5px;letter-spacing:3.5px;color:rgba(255,255,255,.15);text-transform:uppercase;font-family:var(--head);font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.04)}
-.db-row{display:flex;justify-content:space-between;align-items:center;font-size:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.02);color:rgba(255,255,255,.35);font-family:var(--mono)}
-.db-row span{color:var(--teal);font-family:var(--head);font-size:9px;font-weight:700}
-.db-found{display:flex;gap:6px;flex-wrap:wrap}
-.db-p{padding:5px 10px;border-radius:3px;font-size:7px;letter-spacing:1px;font-family:var(--head);font-weight:600}
-.db-p.yes{background:rgba(0,232,122,.07);border:1px solid rgba(0,232,122,.2);color:var(--green)}
-.db-p.no{background:rgba(255,34,68,.06);border:1px solid rgba(255,34,68,.14);color:var(--red)}
-.db-actions{display:flex;gap:8px;justify-content:flex-end;padding:16px 28px;border-top:1px solid rgba(255,255,255,.04)}
-.db-btn{padding:9px 22px;font-family:var(--head);font-size:8.5px;font-weight:700;letter-spacing:3px;border:1px solid;border-radius:3px;cursor:pointer;background:transparent;transition:all .15s;text-transform:uppercase}
-.db-btn.teal{color:var(--teal2);border-color:rgba(0,240,208,.3)}.db-btn.teal:hover{background:rgba(0,240,208,.07)}
-.db-btn.export{color:var(--amber);border-color:rgba(255,153,0,.3)}.db-btn.export:hover{background:rgba(255,153,0,.07)}
-#grab-indicator{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);border:1px solid var(--purple);border-radius:20px;padding:6px 16px;color:var(--purple);font-size:9px;letter-spacing:2px;font-family:var(--head);z-index:100;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
-#grab-indicator.show{opacity:1}
-#kb-hint{position:fixed;bottom:76px;right:8px;width:168px;background:rgba(2,5,12,.95);border:1px solid rgba(255,255,255,.05);border-radius:4px;padding:10px;z-index:50;display:none;opacity:0;transition:opacity .2s}
-#kb-hint.show{display:block;opacity:1}
-.kbh-title{font-size:6px;letter-spacing:3px;color:rgba(255,255,255,.18);font-family:var(--head);margin-bottom:8px;text-transform:uppercase}
-.kb-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.025)}
-.kb-key{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:2px;padding:2px 5px;font-size:7px;color:rgba(255,255,255,.55);min-width:20px;text-align:center}
-.kb-act{font-size:6.5px;color:rgba(255,255,255,.25)}
-#patient-shell{position:fixed;inset:0;z-index:7000;display:none;background:#000}
-#patient-shell.show{display:block}
-#pat-canvas-wrap{position:absolute;inset:0}
-#pat-canvas-wrap canvas{width:100%!important;height:100%!important}
-#doc-panel-toggle{position:fixed;right:0;top:50%;transform:translateY(-50%);width:20px;height:64px;background:rgba(100,160,255,.08);border:1px solid rgba(100,160,255,.18);border-right:none;border-radius:6px 0 0 6px;z-index:9801;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:9px;color:rgba(100,160,255,.5);transition:all .2s}
-#doc-panel-toggle.visible{display:flex}
-#doc-panel-toggle:hover{background:rgba(100,160,255,.18);color:rgba(100,160,255,.9)}
-#doc-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:rgba(6,10,20,.98);border-left:1px solid rgba(100,160,255,.15);z-index:9800;transition:right .32s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;overflow-y:auto;box-shadow:-8px 0 48px rgba(0,0,0,.7)}
-#doc-panel.show{right:0}
-.dp-hdr{padding:18px 20px 14px;border-bottom:1px solid rgba(100,160,255,.1);background:rgba(10,50,100,.08)}
-.dp-title{font-family:var(--head);font-size:10px;font-weight:800;letter-spacing:4px;color:#7ab4e8;margin-bottom:2px}
-.dp-sub{font-size:6px;letter-spacing:2px;color:rgba(100,160,255,.35);font-family:var(--mono)}
-.dp-close{float:right;cursor:pointer;color:rgba(100,160,255,.4);font-size:14px;margin-top:-2px}
-.dp-close:hover{color:rgba(100,160,255,.8)}
-.dp-section{padding:14px 20px;border-bottom:1px solid rgba(100,160,255,.06)}
-.dp-sl{font-size:6px;letter-spacing:3px;color:rgba(100,160,255,.45);text-transform:uppercase;font-family:var(--head);font-weight:700;margin-bottom:10px}
-.dp-disease-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.dp-d{padding:9px 10px;border-radius:4px;border:1px solid rgba(100,160,255,.1);background:rgba(100,160,255,.03);cursor:pointer;transition:all .14s;font-family:var(--head);font-size:7px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:6px;user-select:none;text-transform:uppercase}
-.dp-d:hover{background:rgba(100,160,255,.08);color:rgba(255,255,255,.7);transform:translateX(2px)}
-.dp-d.on{border-color:rgba(100,160,255,.5);color:#fff}
-.dp-d.healthy.on{background:rgba(0,200,120,.1);border-color:rgba(0,200,120,.5);color:#00e87a}
-.dp-d.tumor.on{background:rgba(255,34,68,.08);border-color:rgba(255,34,68,.5);color:#ff2244}
-.dp-d.stenosis.on{background:rgba(255,153,0,.08);border-color:rgba(255,153,0,.5);color:#ff9900}
-.dp-d.mucus.on{background:rgba(153,85,255,.08);border-color:rgba(153,85,255,.5);color:#9955ff}
-.dp-d.asthma.on{background:rgba(255,120,120,.08);border-color:rgba(255,120,120,.5);color:#ff8888}
-.dp-d.copd.on{background:rgba(160,180,200,.08);border-color:rgba(160,180,200,.5);color:#aabbcc}
-.dp-d-icon{font-size:16px}
-.dp-trigger-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.dp-t{padding:10px 6px;border-radius:4px;border:1px solid rgba(100,160,255,.1);background:rgba(100,160,255,.03);cursor:pointer;transition:all .14s;font-family:var(--head);font-size:6px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.35);text-align:center;user-select:none;text-transform:uppercase}
-.dp-t:hover{transform:translateY(-2px)}.dp-t:active{transform:scale(.96)}
-.dp-t .dp-ti{font-size:20px;display:block;margin-bottom:4px}
-.dp-t.smoke:hover{background:rgba(200,180,100,.1);border-color:rgba(200,180,100,.4);color:#d4c06a}
-.dp-t.exercise:hover{background:rgba(0,200,120,.1);border-color:rgba(0,200,120,.4);color:#00e87a}
-.dp-t.attack:hover{background:rgba(255,34,68,.1);border-color:rgba(255,34,68,.5);color:#ff2244}
-.dp-t.inhaler:hover{background:rgba(0,180,255,.1);border-color:rgba(0,180,255,.4);color:#00b4ff}
-.dp-t.cough:hover{background:rgba(255,153,0,.1);border-color:rgba(255,153,0,.4);color:#ff9900}
-.dp-t.reset-t:hover{background:rgba(0,240,208,.06);border-color:rgba(0,240,208,.4);color:#00f0d0}
-.dp-sev-row{display:flex;align-items:center;gap:10px}
-.dp-sev-labels{display:flex;justify-content:space-between;font-size:5.5px;color:rgba(100,160,255,.4);font-family:var(--mono);margin-bottom:4px}
-.dp-sev-val{font-family:var(--head);font-size:11px;font-weight:700;color:#7ab4e8;width:32px;text-align:right}
-.dp-view-opts{display:flex;gap:6px}
-.dp-vo{flex:1;padding:8px 4px;border-radius:4px;border:1px solid rgba(100,160,255,.1);background:rgba(100,160,255,.03);cursor:pointer;transition:all .14s;font-family:var(--head);font-size:6px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.3);text-align:center;user-select:none;text-transform:uppercase}
-.dp-vo:hover{background:rgba(100,160,255,.08);color:rgba(255,255,255,.7)}
-.dp-vo.on{background:rgba(100,160,255,.12);border-color:rgba(100,160,255,.4);color:#7ab4e8}
-.dp-nav-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.dp-nav{padding:8px 6px;border-radius:4px;border:1px solid rgba(100,160,255,.1);background:rgba(100,160,255,.03);cursor:pointer;transition:all .14s;font-family:var(--head);font-size:6px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.35);text-align:center;user-select:none;text-transform:uppercase}
-.dp-nav:hover{background:rgba(100,160,255,.1);color:rgba(255,255,255,.8);transform:translateY(-1px)}
-.dp-status{margin:10px 0 0;padding:8px 10px;background:rgba(0,200,120,.05);border:1px solid rgba(0,200,120,.12);border-radius:4px;font-family:var(--mono);font-size:6px;color:rgba(0,200,120,.7);line-height:1.9}
-.dp-depth-wrap{padding:12px 20px;border-top:1px solid rgba(100,160,255,.06);margin-top:auto}
-.dp-depth-lbl{font-size:6px;letter-spacing:2px;color:rgba(100,160,255,.3);font-family:var(--mono);margin-bottom:5px}
-#dp-depth-bar{height:3px;background:rgba(100,160,255,.08);border-radius:2px;overflow:hidden}
-#dp-depth-fill{height:100%;background:linear-gradient(90deg,#4a7fa8,#7ab4e8);border-radius:2px;width:0%;transition:width .1s}
+
+/* ─── Reset ─── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100vw; height:100vh; overflow:hidden; background:var(--bg); }
+body { font-family:var(--mono); color:var(--text); cursor:none; }
+
+/* ─── Custom Cursor ─── */
+#cur {
+  position:fixed; width:10px; height:10px;
+  border:1.5px solid var(--teal2); border-radius:50%;
+  pointer-events:none; z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:width .1s,height .1s,border-color .1s;
+  mix-blend-mode:screen;
+}
+#cur::after {
+  content:''; position:absolute; width:2px; height:2px;
+  border-radius:50%; background:var(--teal2);
+  top:50%; left:50%; transform:translate(-50%,-50%);
+}
+#cur.p { width:20px; height:20px; border-color:var(--red); }
+#cur.v { border-color:var(--blue); }
+#cur.f { border-color:var(--amber); }
+#cur.g { width:26px; height:26px; border-color:var(--purple); border-width:2px; }
+
+/* ─── Scanline overlay ─── */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9990;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.012) 2px,rgba(0,0,0,.012) 4px);
+}
+
+/* ─── App shell ─── */
+#app { position:fixed; inset:0; display:flex; flex-direction:column; }
+
+/* ═══════════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════════ */
+#tb {
+  height:var(--bar-h);
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center;
+  padding:0 12px; gap:0; flex-shrink:0; z-index:200; position:relative;
+  overflow:hidden;
+}
+#tb::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent 0%,var(--teal) 20%,var(--teal2) 50%,var(--teal) 80%,transparent 100%);
+  opacity:.25;
+}
+
+/* Brand */
+.brand-block { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.brand-logo {
+  font-family:var(--head); font-weight:800; font-size:14px;
+  letter-spacing:5px; color:var(--text);
+}
+.brand-logo em { color:var(--teal2); font-style:normal; }
+.brand-ver {
+  font-size:8px; letter-spacing:2px; color:var(--text3);
+  background:var(--surface3); border:1px solid var(--border);
+  padding:2px 6px; border-radius:2px;
+}
+.brand-divider { width:1px; height:28px; background:var(--border); flex-shrink:0; margin:0 10px; }
+.brand-inst { line-height:1.4; }
+.brand-inst-name { font-family:var(--head); font-size:8px; font-weight:600; letter-spacing:3px; color:var(--teal); opacity:.8; }
+.brand-inst-sub { font-size:9px; color:var(--text3); letter-spacing:.5px; margin-top:1px; }
+
+/* Tabs */
+.tabs { display:flex; gap:1px; margin-left:16px; flex-shrink:0; }
+.tab {
+  padding:5px 12px; font-family:var(--head); font-size:9px; font-weight:600;
+  letter-spacing:2.5px; color:var(--text3); cursor:pointer;
+  border:1px solid transparent; border-radius:2px;
+  transition:all .15s; user-select:none; text-transform:uppercase;
+}
+.tab:hover:not(.on) { color:var(--text); border-color:var(--border); }
+.tab.on {
+  background:rgba(14,207,176,.08);
+  border-color:rgba(14,207,176,.25);
+  color:var(--teal2);
+}
+
+/* Stats strip */
+.tb-stats { display:flex; gap:0; margin-left:auto; border:1px solid var(--border); border-radius:3px; overflow:hidden; flex-shrink:0; }
+.ts { padding:3px 10px; border-right:1px solid var(--border); text-align:center; min-width:0; }
+.ts:last-child { border-right:none; }
+.tsl { font-size:7px; letter-spacing:1.5px; color:var(--text3); text-transform:uppercase; margin-bottom:1px; white-space:nowrap; }
+.tsv { font-family:var(--head); font-size:12px; font-weight:700; color:var(--teal); letter-spacing:.3px; line-height:1; transition:color .2s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:72px; }
+
+/* Status pill */
+.status-pill {
+  display:flex; align-items:center; gap:7px;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:20px; padding:4px 10px; margin-left:10px; flex-shrink:0;
+}
+.sdot { width:6px; height:6px; border-radius:50%; background:var(--text3); transition:all .3s; flex-shrink:0; }
+.sdot.on { background:var(--green); box-shadow:0 0 8px var(--green); animation:blink 2.2s infinite; }
+.sdot.w  { background:var(--amber); }
+.sdot.r  { background:var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.spillt { font-size:8px; letter-spacing:1.5px; color:var(--text2); }
+
+/* Mode badge */
+#mode-badge {
+  margin-left:10px; display:flex; align-items:center; gap:6px;
+  padding:4px 12px; border-radius:3px; border:1px solid var(--border);
+  font-family:var(--head); font-size:7px; font-weight:700; letter-spacing:2px;
+  text-transform:uppercase; cursor:pointer; transition:all .15s; color:var(--text2);
+}
+
+/* ═══════════════════════════════════════════
+   VIEWS
+═══════════════════════════════════════════ */
+#views { flex:1; display:flex; overflow:hidden; position:relative; }
+
+/* External view */
+#ext-view { flex:1; position:relative; min-width:0; }
+#c-ext { width:100%; height:100%; display:block; }
+#ext-label {
+  position:absolute; top:10px; left:12px;
+  font-size:8px; letter-spacing:2.5px; color:rgba(14,207,176,.3);
+  text-transform:uppercase; pointer-events:none; z-index:10; font-family:var(--head);
+}
+#scope-svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:20; }
+
+/* Bronchoscope view */
+#bro-view {
+  width:var(--bro-w); flex-shrink:0; position:relative;
+  background:#000; overflow:hidden;
+  border-left:1px solid var(--border);
+}
+#c-bro { width:100%; height:100%; display:block; }
+
+/* Bro vignette */
+#bro-vig {
+  position:absolute; inset:0; pointer-events:none; z-index:5;
+  background:radial-gradient(ellipse 68% 68% at 50% 50%,transparent 44%,rgba(0,0,0,.94) 70%,#000 100%);
+}
+
+/* Bro HUD */
+#bro-hud { position:absolute; inset:0; pointer-events:none; z-index:10; padding:12px; }
+.bh {
+  position:absolute; font-size:8px; letter-spacing:.6px;
+  color:rgba(14,207,176,.6); line-height:1.9; font-family:var(--mono);
+  text-shadow:0 1px 4px rgba(0,0,0,.8);
+}
+#bh-tl { top:14px; left:14px; }
+#bh-tr { top:14px; right:14px; text-align:right; }
+#bh-bl { bottom:54px; left:14px; }
+#bh-br { bottom:54px; right:14px; text-align:right; }
+
+/* Crosshair */
+#xhair { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:32px; height:32px; pointer-events:none; z-index:11; opacity:.4; }
+#xhair::before, #xhair::after { content:''; position:absolute; background:rgba(14,207,176,.6); }
+#xhair::before { width:1px; height:32px; left:50%; transform:translateX(-50%); }
+#xhair::after  { width:32px; height:1px; top:50%; transform:translateY(-50%); }
+.xr { position:absolute; top:50%; left:50%; border-radius:50%; transform:translate(-50%,-50%); border:1px solid rgba(14,207,176,.35); }
+.xr1 { width:10px; height:10px; }
+.xr2 { width:24px; height:24px; border-color:rgba(14,207,176,.15); }
+
+/* Deflection bar */
+#dbar { position:absolute; right:14px; top:50%; transform:translateY(-50%); width:2px; height:44%; background:rgba(255,255,255,.04); border-radius:2px; z-index:10; }
+#dfill { width:100%; background:linear-gradient(to top,var(--teal),var(--blue)); border-radius:2px; transition:height .06s; height:0%; position:absolute; bottom:0; }
+#defl-ind { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); pointer-events:none; z-index:12; }
+#defl-canvas { width:76px; height:76px; opacity:.65; }
+
+/* Pathology alert */
+#palert {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%) translateY(64px);
+  background:rgba(8,2,4,.95); border:1px solid var(--red);
+  border-radius:2px; padding:8px 18px; font-size:8px;
+  letter-spacing:3px; color:var(--red); font-family:var(--head);
+  font-weight:700; opacity:0; transition:opacity .25s;
+  pointer-events:none; z-index:20; text-align:center; white-space:nowrap;
+}
+#palert.show { opacity:1; }
+
+/* Airway ring */
+#aring {
+  position:absolute; top:50%; left:50%; width:0; height:0;
+  border:2px solid var(--purple); border-radius:50%;
+  opacity:0; transition:width .16s,height .16s,opacity .16s;
+  pointer-events:none; z-index:15; transform:translate(-50%,-50%);
+}
+#aring.show  { width:56px; height:56px; opacity:.7; }
+#aring.fire  { width:80px; height:80px; border-color:var(--amber); opacity:1; }
+
+/* Hold progress */
+#hold-prog { position:absolute; top:50%; left:50%; width:60px; height:60px; transform:translate(-50%,-50%); pointer-events:none; z-index:16; opacity:0; transition:opacity .1s; }
+#hold-prog.show { opacity:1; }
+#hold-prog svg { width:60px; height:60px; transform:rotate(-90deg); }
+#hold-arc { fill:none; stroke:var(--purple); stroke-width:2.5; stroke-linecap:round; stroke-dasharray:176; stroke-dashoffset:176; transition:stroke-dashoffset .05s; }
+
+/* Branch selector */
+#bsel { position:absolute; inset:0; pointer-events:none; z-index:30; display:flex; align-items:center; justify-content:space-between; padding:0 28px; opacity:0; transition:opacity .18s; }
+#bsel.show { opacity:1; }
+.bso { font-family:var(--head); font-size:16px; font-weight:800; letter-spacing:2px; padding:10px 16px; border-radius:3px; transition:all .12s; border:1px solid transparent; }
+.bso.hi { background:rgba(14,207,176,.12); border-color:var(--teal2); color:var(--teal2); }
+.bso.lo { color:rgba(255,255,255,.1); border-color:rgba(255,255,255,.05); }
+#bsel-mid { color:rgba(14,207,176,.3); font-size:8px; letter-spacing:2px; font-family:var(--head); text-align:center; }
+
+/* Panel scrollbars — subtle */
+#lp::-webkit-scrollbar, #rp::-webkit-scrollbar { width:3px; }
+#lp::-webkit-scrollbar-track, #rp::-webkit-scrollbar-track { background:transparent; }
+#lp::-webkit-scrollbar-thumb, #rp::-webkit-scrollbar-thumb { background:rgba(14,207,176,.2); border-radius:2px; }
+#lp::-webkit-scrollbar-thumb:hover, #rp::-webkit-scrollbar-thumb:hover { background:rgba(14,207,176,.4); }
+
+/* ═══════════════════════════════════════════
+   PANELS — Left: Gesture Engine
+═══════════════════════════════════════════ */
+#lp {
+  position:absolute; top:calc(var(--bar-h) + 8px); left:8px;
+  width:var(--panel-w);
+  max-height:calc(100vh - var(--bar-h) - 200px);
+  overflow-y:auto; overflow-x:hidden;
+  background:var(--surface); border:1px solid var(--border);
+  border-top:2px solid var(--teal);
+  border-radius:4px; backdrop-filter:blur(24px); z-index:50;
+}
+.panel-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px; cursor:pointer; user-select:none;
+  border-bottom:1px solid var(--border);
+}
+.panel-hdr:hover { background:rgba(14,207,176,.03); }
+.ph-t { font-size:8px; letter-spacing:2px; color:var(--text2); text-transform:uppercase; font-family:var(--head); font-weight:600; }
+.ph-arr { font-size:10px; color:var(--text3); transition:transform .2s; }
+.ph-arr.open { transform:rotate(90deg); }
+.panel-body { padding:12px 14px; }
+
+/* Gesture ring */
+.grow { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.gring { position:relative; width:44px; height:44px; flex-shrink:0; }
+.gring svg { width:44px; height:44px; transform:rotate(-90deg); }
+.gr-bg { fill:none; stroke:rgba(255,255,255,.04); stroke-width:3; }
+.gr-fg { fill:none; stroke:var(--teal); stroke-width:3; stroke-linecap:round; stroke-dasharray:120; stroke-dashoffset:120; transition:stroke-dashoffset .05s; }
+.grv { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:8px; color:var(--teal); font-family:var(--head); font-weight:700; }
+
+#gname { font-family:var(--head); font-size:16px; font-weight:800; color:var(--teal2); line-height:1; }
+#gname.p { color:var(--red); }
+#gname.v { color:var(--blue); }
+#gname.f { color:var(--amber); }
+#gsub { font-size:8px; color:var(--text3); margin-top:3px; min-height:12px; }
+#gbadge {
+  font-size:7px; letter-spacing:1.5px; color:var(--teal); margin-top:4px;
+  background:var(--teal-dim); border:1px solid rgba(14,207,176,.2);
+  border-radius:2px; padding:2px 7px; display:inline-block;
+}
+#tracking-quality { font-size:7px; color:var(--amber); margin-top:5px; min-height:12px; }
+
+/* Metric bars */
+.br { display:flex; justify-content:space-between; font-size:8px; margin:3px 0; }
+.brl { color:var(--text3); }
+.brv { color:var(--teal); }
+.btrack { height:2px; background:rgba(255,255,255,.04); border-radius:1px; overflow:hidden; margin-bottom:8px; }
+.bf { height:100%; border-radius:1px; transition:width .05s; }
+.bf.t { background:var(--teal); }
+.bf.b { background:var(--blue); }
+.bf.r { background:var(--red); }
+.bf.g { background:var(--green); }
+.bf.low { background:var(--amber); }
+
+/* Gesture confidence bars */
+.hrow { display:flex; align-items:center; gap:8px; margin:2px 0; }
+.hl { font-size:8px; color:var(--text3); width:50px; }
+.ht { flex:1; height:2px; background:rgba(255,255,255,.04); border-radius:1px; overflow:hidden; }
+.hf { height:100%; border-radius:1px; transition:width .04s; background:var(--green); }
+.hf.low { background:var(--amber); }
+
+/* Finger display */
+.fg { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:10px; }
+.fc { background:rgba(255,255,255,.015); border:1px solid rgba(14,207,176,.06); border-radius:3px; padding:8px; }
+.fcl { font-size:7px; letter-spacing:2px; color:var(--text3); margin-bottom:6px; font-family:var(--head); font-weight:600; }
+.fbs { display:flex; gap:3px; align-items:flex-end; }
+.fb { width:8px; border-radius:1px 1px 0 0; background:rgba(255,255,255,.05); transition:all .05s; min-height:3px; }
+.fb.t { background:var(--teal); }
+.fb.b { background:var(--blue); }
+.fcg { font-size:8px; color:var(--teal); margin-top:5px; }
+.fcg.b { color:var(--blue); }
+
+/* Gesture map */
+.gmap { margin-top:10px; font-size:8px; color:var(--text3); line-height:2.2; }
+.gmap span { color:var(--text); }
+
+/* ═══════════════════════════════════════════
+   PANELS — Right: Navigation & Clinical
+═══════════════════════════════════════════ */
+#rp {
+  position:absolute; top:calc(var(--bar-h) + 8px);
+  right:calc(var(--bro-w) + 8px);
+  width:var(--rp-w);
+  max-height:calc(100vh - var(--bar-h) - 160px);
+  overflow-y:auto; overflow-x:hidden;
+  background:var(--surface); border:1px solid var(--border);
+  border-top:2px solid var(--blue);
+  border-radius:4px; backdrop-filter:blur(24px); z-index:50;
+}
+.spos {
+  font-size:8px; color:var(--amber); letter-spacing:1px; margin:6px 14px 8px;
+  display:flex; align-items:center; gap:6px;
+  border-bottom:1px solid rgba(255,255,255,.04); padding-bottom:8px;
+}
+
+/* Clinical mode grid */
+.cmg { display:grid; grid-template-columns:1fr 1fr; gap:5px; padding:0 14px 10px; }
+.cmb {
+  background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06);
+  border-radius:3px; padding:9px 4px 8px; text-align:center; cursor:pointer;
+  color:var(--text3); transition:all .12s; user-select:none;
+}
+.cmb .ci { font-size:16px; margin-bottom:4px; display:block; line-height:1; }
+.cmb .cl { font-size:8px; letter-spacing:1px; display:block; text-transform:uppercase;
+  font-family:var(--head); font-weight:600; color:inherit; }
+.cmb.on { background:rgba(139,92,246,.1); border-color:var(--purple); color:var(--purple); }
+.cmb:hover:not(.on) { background:rgba(255,255,255,.04); color:var(--text2); }
+
+/* Pathology items */
+.pi-item {
+  display:flex; align-items:center; gap:7px; padding:7px 14px;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  font-size:9px; color:var(--text2); cursor:pointer; transition:background .12s;
+}
+.pi-item:hover { background:rgba(255,255,255,.03); }
+.pid { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.pi-item.near { color:var(--text); }
+.pi-item.near .pid { animation:blink 1s infinite; }
+.pdist { margin-left:auto; color:var(--teal); font-size:7px; }
+
+/* Annotations */
+#ann-list { max-height:72px; overflow-y:auto; padding:0 14px; }
+.ai { font-size:8px; color:var(--teal); padding:3px 0; border-bottom:1px solid rgba(14,207,176,.05); }
+.ai span { color:var(--text3); }
+
+/* ═══════════════════════════════════════════
+   PANELS — Bottom Left: Calibration
+═══════════════════════════════════════════ */
+#bpanel-l {
+  position:absolute; bottom:10px; left:10px; width:var(--panel-w);
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:4px; padding:12px 14px; backdrop-filter:blur(24px); z-index:50;
+}
+.bst { font-size:7px; letter-spacing:3px; color:var(--text3); text-transform:uppercase; margin-bottom:10px; font-family:var(--head); font-weight:600; }
+.sr { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+.sr label { font-size:8px; color:var(--text3); width:68px; }
+input[type=range] {
+  flex:1; height:2px; -webkit-appearance:none;
+  background:rgba(255,255,255,.07); border-radius:1px;
+  cursor:pointer; outline:none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:9px; height:9px;
+  border-radius:50%; background:var(--teal);
+}
+.sv { font-size:8px; color:var(--teal); width:22px; text-align:right; }
+
+/* ═══════════════════════════════════════════
+   CAMERA PANEL
+═══════════════════════════════════════════ */
+#cam-p {
+  position:absolute; bottom:10px; right:calc(var(--bro-w) + 10px);
+  width:var(--rp-w); height:128px; border-radius:4px;
+  overflow:hidden; border:1px solid var(--border);
+  background:#000; z-index:50;
+}
+#cvid { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:none; }
+#ccan { position:absolute; top:0; left:0; width:100%; height:100%; transform:scaleX(-1); }
+.ctag { position:absolute; top:7px; left:9px; font-size:7px; letter-spacing:2px; color:rgba(14,207,176,.4); z-index:2; font-family:var(--head); }
+#gdbg { position:absolute; bottom:6px; left:8px; font-size:7px; color:var(--teal); z-index:3; }
+
+/* ═══════════════════════════════════════════
+   BOTTOM HUD — Active Segment
+═══════════════════════════════════════════ */
+#bi {
+  position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+  background:var(--surface); border:1px solid var(--border);
+  border-top:2px solid var(--teal);
+  border-radius:4px; padding:8px 22px; text-align:center;
+  min-width:240px; pointer-events:none; z-index:50;
+}
+#bi-l { font-size:7px; letter-spacing:3px; color:var(--text3); text-transform:uppercase; font-family:var(--head); }
+#bi-v { font-family:var(--head); font-size:13px; font-weight:700; color:var(--teal); margin-top:3px; letter-spacing:2px; }
+#bi-v.w { color:var(--amber); }
+#bi-v.r { color:var(--red); }
+
+/* ═══════════════════════════════════════════
+   CT OVERLAY
+═══════════════════════════════════════════ */
+#ct-overlay { position:absolute; bottom:16px; right:16px; width:72px; height:72px; pointer-events:none; z-index:12; opacity:.5; }
+#ct-canvas { width:72px; height:72px; }
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+#toast {
+  position:fixed; top:calc(var(--bar-h) + 10px); left:50%;
+  transform:translateX(-50%) translateY(-8px);
+  background:rgba(8,12,16,.98); border:1px solid var(--teal);
+  border-radius:3px; padding:7px 22px;
+  font-family:var(--head); font-size:10px; font-weight:700;
+  letter-spacing:3px; color:var(--teal2); z-index:900;
+  opacity:0; pointer-events:none; transition:all .18s; white-space:nowrap;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ═══════════════════════════════════════════
+   SPLASH SCREEN
+═══════════════════════════════════════════ */
+#splash {
+  position:fixed; inset:0; z-index:9000;
+  background:var(--bg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:0; overflow:hidden;
+}
+/* Grid background */
+#splash::before {
+  content:''; position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(14,207,176,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(14,207,176,.04) 1px,transparent 1px);
+  background-size:60px 60px;
+  animation:gridDrift 28s linear infinite;
+}
+@keyframes gridDrift { 0%{transform:translate(0,0)} 100%{transform:translate(60px,60px)} }
+/* Radial fade over grid */
+#splash::after {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 0%,var(--bg) 72%);
+  pointer-events:none;
+}
+
+.splash-inner {
+  position:relative; z-index:2;
+  display:flex; flex-direction:column; align-items:center; gap:0;
+  animation:splashIn .8s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes splashIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+.sey {
+  font-family:var(--head); font-size:8px; letter-spacing:8px;
+  color:var(--text3); text-transform:uppercase; margin-bottom:20px;
+}
+.stitle {
+  font-family:var(--head); font-weight:800;
+  font-size:clamp(52px,9vw,108px);
+  letter-spacing:-1px; color:var(--text); line-height:.9;
+  text-align:center; margin-bottom:6px;
+}
+.stitle em { color:var(--teal2); font-style:normal; }
+.stitle .stitle-dot { color:rgba(14,207,176,.35); }
+.sver {
+  font-family:var(--serif); font-style:italic;
+  font-size:clamp(14px,1.8vw,22px); color:var(--text3);
+  letter-spacing:1px; margin-bottom:28px; text-align:center;
+}
+
+/* Institution block */
+.splash-inst {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  margin-bottom:28px;
+}
+.splash-inst-name { font-family:var(--head); font-size:10px; font-weight:700; letter-spacing:5px; color:var(--teal); opacity:.9; }
+.splash-inst-sub { font-size:9px; color:var(--text3); letter-spacing:1px; }
+
+/* Divider line */
+.sln {
+  width:240px; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(14,207,176,.3),transparent);
+  margin-bottom:28px;
+}
+
+/* Feature cards */
+.sfeatures { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; max-width:600px; margin-bottom:36px; }
+.sf {
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  background:rgba(14,207,176,.02); border:1px solid rgba(14,207,176,.1);
+  border-radius:4px; padding:12px 10px; width:76px;
+  transition:all .2s;
+}
+.sf:hover { background:rgba(14,207,176,.06); border-color:rgba(14,207,176,.25); transform:translateY(-2px); }
+.sfi { font-size:18px; }
+.sfl { font-size:7px; letter-spacing:.5px; color:var(--text3); text-align:center; line-height:1.5; font-family:var(--head); }
+
+/* Launch button */
+#sbtn {
+  background:transparent;
+  border:1px solid var(--teal);
+  color:var(--teal);
+  font-family:var(--head); font-weight:700; font-size:10px;
+  letter-spacing:8px; text-transform:uppercase;
+  padding:16px 64px; border-radius:3px; cursor:pointer;
+  transition:all .2s; position:relative; overflow:hidden; outline:none;
+  margin-bottom:16px;
+}
+#sbtn::before {
+  content:''; position:absolute; inset:0; background:var(--teal);
+  transform:translateX(-100%); transition:transform .2s;
+}
+#sbtn:hover { color:var(--bg); }
+#sbtn:hover::before { transform:translateX(0); }
+#sbtn span { position:relative; z-index:1; }
+
+.snote { font-size:8px; letter-spacing:1.5px; color:var(--text3); text-align:center; max-width:480px; line-height:2; }
+
+/* ═══════════════════════════════════════════
+   MODE SELECTOR
+═══════════════════════════════════════════ */
+#mode-sel {
+  position:fixed; inset:0; z-index:8500; overflow:hidden;
+  background:var(--bg); display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+#mode-sel::before {
+  content:''; position:absolute; inset:0;
+  background-image:linear-gradient(rgba(14,207,176,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(14,207,176,.03) 1px,transparent 1px);
+  background-size:48px 48px; animation:gridDrift 20s linear infinite;
+}
+.ms-header { position:relative; z-index:2; text-align:center; margin-bottom:32px; }
+.ms-eyebrow {
+  font-family:var(--mono); font-size:8px; letter-spacing:5px;
+  color:rgba(14,207,176,.4); text-transform:uppercase;
+  margin-bottom:12px; display:flex; align-items:center; gap:12px; justify-content:center;
+}
+.ms-eyebrow::before, .ms-eyebrow::after {
+  content:''; display:block; width:40px; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(14,207,176,.3));
+}
+.ms-eyebrow::after { transform:scaleX(-1); }
+.ms-title {
+  font-family:var(--head); font-size:36px; font-weight:800;
+  letter-spacing:4px; color:var(--text); line-height:1; margin-bottom:6px;
+}
+.ms-title em { color:var(--teal2); font-style:normal; }
+.ms-title .ms-ver { font-size:14px; color:var(--text3); letter-spacing:2px; font-weight:400; margin-left:8px; }
+.ms-sub { font-family:var(--serif); font-style:italic; font-size:14px; letter-spacing:1px; color:var(--text3); margin-top:4px; }
+
+.ms-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; max-width:1000px; width:90%; position:relative; z-index:2; }
+.mc {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:28px 20px 22px; cursor:pointer;
+  transition:transform .2s,box-shadow .2s,background .2s;
+  position:relative; overflow:hidden; text-align:center; user-select:none;
+}
+.mc:hover { transform:translateY(-5px); }
+.mc.student   { border-top:2px solid var(--blue); }
+.mc.resident  { border-top:2px solid var(--teal2); }
+.mc.patient   { border-top:2px solid #7ab4e8; }
+.mc.instructor{ border-top:2px solid var(--amber); }
+.mc.student:hover   { box-shadow:0 14px 44px rgba(32,128,255,.18); background:rgba(32,128,255,.04); }
+.mc.resident:hover  { box-shadow:0 14px 44px rgba(14,207,176,.15); background:rgba(14,207,176,.03); }
+.mc.patient:hover   { box-shadow:0 14px 44px rgba(122,180,232,.15); background:rgba(122,180,232,.03); }
+.mc.instructor:hover{ box-shadow:0 14px 44px rgba(245,166,35,.15); background:rgba(245,166,35,.03); }
+.mc-icon { font-size:28px; margin-bottom:14px; display:block; }
+.mc-name { font-family:var(--head); font-size:10px; font-weight:800; letter-spacing:4px; text-transform:uppercase; margin-bottom:10px; }
+.mc.student .mc-name    { color:var(--blue); }
+.mc.resident .mc-name   { color:var(--teal2); }
+.mc.patient .mc-name    { color:#7ab4e8; }
+.mc.instructor .mc-name { color:var(--amber); }
+.mc-desc { font-size:8px; color:var(--text3); line-height:2; margin-bottom:16px; font-family:var(--mono); }
+.mc-tags { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; }
+.mc-tag {
+  font-size:6px; letter-spacing:1.5px; padding:3px 8px;
+  border-radius:2px; border:1px solid; text-transform:uppercase;
+  font-family:var(--head); font-weight:600;
+}
+.mc.student .mc-tag    { color:var(--blue); border-color:rgba(32,128,255,.25); background:rgba(32,128,255,.06); }
+.mc.resident .mc-tag   { color:var(--teal2); border-color:rgba(14,207,176,.2); background:rgba(14,207,176,.05); }
+.mc.patient .mc-tag    { color:#7ab4e8; border-color:rgba(122,180,232,.2); background:rgba(122,180,232,.05); }
+.mc.instructor .mc-tag { color:var(--amber); border-color:rgba(245,166,35,.2); background:rgba(245,166,35,.05); }
+.mc-lock {
+  position:absolute; top:10px; right:10px; width:18px; height:18px;
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:9px; border:1px solid;
+}
+.mc.resident .mc-lock    { color:var(--teal2); border-color:rgba(14,207,176,.3); background:rgba(14,207,176,.06); }
+.mc.instructor .mc-lock  { color:var(--amber); border-color:rgba(245,166,35,.3); background:rgba(245,166,35,.06); }
+.ms-footer { position:relative; z-index:2; margin-top:20px; text-align:center; }
+.ms-institution { font-family:var(--head); font-size:8px; letter-spacing:4px; color:rgba(14,207,176,.35); text-transform:uppercase; margin-bottom:5px; }
+.ms-note { font-family:var(--mono); font-size:7px; letter-spacing:1px; color:var(--text3); }
+@keyframes msCardIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.mc { animation:msCardIn .4s ease both; }
+.mc:nth-child(1){animation-delay:.06s} .mc:nth-child(2){animation-delay:.13s}
+.mc:nth-child(3){animation-delay:.20s} .mc:nth-child(4){animation-delay:.27s}
+
+/* ═══════════════════════════════════════════
+   PIN OVERLAY
+═══════════════════════════════════════════ */
+#pin-overlay { position:fixed; inset:0; z-index:9100; background:rgba(0,0,0,.88); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; }
+#pin-overlay.show { display:flex; }
+.pin-box { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:36px 40px; text-align:center; min-width:290px; }
+.pin-title { font-family:var(--head); font-size:10px; font-weight:700; letter-spacing:4px; color:var(--amber); margin-bottom:5px; }
+.pin-sub { font-size:8px; color:var(--text3); letter-spacing:1px; margin-bottom:22px; font-family:var(--mono); }
+.pin-dots { display:flex; gap:10px; justify-content:center; margin-bottom:22px; }
+.pd { width:14px; height:14px; border-radius:50%; border:1px solid rgba(245,166,35,.25); background:transparent; transition:all .15s; }
+.pd.fill { background:var(--amber); border-color:var(--amber); }
+.pin-keys { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.pk { padding:12px; font-family:var(--head); font-size:15px; font-weight:700; color:var(--text2); background:var(--surface2); border:1px solid var(--border); border-radius:4px; cursor:pointer; transition:all .1s; user-select:none; }
+.pk:hover { background:rgba(245,166,35,.08); border-color:rgba(245,166,35,.25); color:var(--amber); }
+.pk:active { transform:scale(.97); }
+.pin-err { font-size:8px; color:var(--red); margin-top:10px; height:14px; letter-spacing:1px; }
+
+/* ═══════════════════════════════════════════
+   SCORE BAR
+═══════════════════════════════════════════ */
+#score-bar {
+  position:fixed; top:var(--bar-h); right:0; width:44px;
+  background:var(--surface2); border-left:1px solid var(--border);
+  z-index:60; display:none; flex-direction:column;
+  align-items:center; gap:10px; padding:12px 5px;
+  height:calc(100vh - var(--bar-h));
+}
+#score-bar.show { display:flex; }
+.sb-item { text-align:center; width:100%; }
+.sb-v { font-family:var(--head); font-size:11px; font-weight:800; color:var(--teal); line-height:1; }
+.sb-l { font-size:5px; letter-spacing:1px; color:var(--text3); text-transform:uppercase; margin-top:2px; font-family:var(--mono); }
+.sb-sep { width:24px; height:1px; background:var(--border); }
+.sb-contact { color:var(--amber) !important; }
+
+/* ═══════════════════════════════════════════
+   PHYSICS / EFFECTS
+═══════════════════════════════════════════ */
+#wall-flash {
+  position:fixed; inset:0; pointer-events:none; z-index:400; opacity:0;
+  background:radial-gradient(ellipse 100% 100% at 50% 50%,transparent 30%,rgba(200,10,10,.2) 70%,rgba(255,30,30,.42) 100%);
+  transition:opacity .06s;
+}
+#tension-overlay {
+  position:fixed; inset:0; pointer-events:none; z-index:395; opacity:0;
+  transition:opacity .07s;
+  background:radial-gradient(ellipse 72% 72% at 50% 50%,transparent 28%,rgba(0,28,18,.55) 60%,rgba(0,55,35,.85) 100%);
+}
+#tension-text {
+  position:fixed; top:50%; left:50%;
+  transform:translate(-50%,calc(-50% + 82px));
+  pointer-events:none; z-index:396; opacity:0; transition:opacity .12s;
+  font-family:var(--head); font-size:8px; font-weight:700; letter-spacing:4px;
+  color:rgba(14,207,176,.75); white-space:nowrap; text-align:center;
+}
+#biopsy-bleed {
+  position:fixed; inset:0; pointer-events:none; z-index:401; opacity:0;
+  background:radial-gradient(ellipse 58% 58% at 50% 50%,rgba(210,5,5,.14) 0%,rgba(255,18,18,.4) 44%,transparent 66%);
+  transition:opacity .08s;
+}
+#scope-resistance-bar {
+  position:absolute; bottom:96px; right:10px; width:3px; height:46px;
+  background:rgba(255,255,255,.04); border-radius:2px; z-index:12; pointer-events:none;
+}
+#scope-resistance-fill {
+  width:100%; border-radius:2px;
+  background:linear-gradient(to top,var(--green),var(--amber) 50%,var(--red));
+  transition:height .05s; height:0%; position:absolute; bottom:0;
+}
+#resistance-label {
+  position:absolute; bottom:146px; right:3px; font-size:6px; letter-spacing:1px;
+  color:rgba(14,207,176,.45); font-family:var(--head);
+  writing-mode:vertical-rl; transform:rotate(180deg);
+  pointer-events:none; z-index:12;
+}
+@keyframes scopeShake {
+  0%,100%{transform:translate(0,0)} 15%{transform:translate(-2.5px,1.5px)}
+  35%{transform:translate(2.2px,-2px)} 55%{transform:translate(-1.5px,2.8px)}
+  75%{transform:translate(2.5px,-1.2px)} 90%{transform:translate(-1px,1.5px)}
+}
+.scope-shaking { animation:scopeShake .26s ease-out !important; }
+
+/* ═══════════════════════════════════════════
+   SEGMENT CARD
+═══════════════════════════════════════════ */
+#seg-card {
+  position:fixed; top:calc(var(--bar-h) + 6px);
+  right:calc(var(--bro-w) + 6px); width:204px;
+  background:rgba(8,12,20,.97); border:1px solid rgba(32,128,255,.18);
+  border-left:2px solid var(--blue); border-radius:4px; padding:16px;
+  z-index:65; transform:translateX(14px); opacity:0;
+  transition:transform .24s cubic-bezier(.22,1,.36,1),opacity .24s;
+  pointer-events:none;
+}
+#seg-card.show { transform:translateX(0); opacity:1; pointer-events:auto; }
+#sc-gen { font-size:7px; letter-spacing:2.5px; color:rgba(32,128,255,.5); text-transform:uppercase; font-family:var(--head); margin-bottom:5px; }
+#sc-name { font-family:var(--head); font-size:13px; font-weight:800; color:var(--blue); margin-bottom:3px; line-height:1.2; }
+#sc-latin { font-size:7px; color:rgba(32,128,255,.4); letter-spacing:.5px; margin-bottom:12px; font-style:italic; }
+#sc-body { font-size:8px; color:var(--text3); line-height:1.9; font-family:var(--mono); margin-bottom:10px; }
+#sc-pearl { padding:9px 11px; background:rgba(32,128,255,.06); border-left:2px solid rgba(32,128,255,.35); font-size:8px; color:rgba(32,128,255,.65); line-height:1.8; font-family:var(--mono); }
+#sc-dismiss { font-size:7px; color:var(--text3); text-align:right; margin-top:9px; cursor:pointer; }
+#sc-dismiss:hover { color:var(--text2); }
+
+/* ═══════════════════════════════════════════
+   INSTRUCTOR PANEL
+═══════════════════════════════════════════ */
+#instr-panel {
+  position:fixed; top:var(--bar-h); left:0; width:236px;
+  background:rgba(8,12,18,.97); border-right:1px solid rgba(245,166,35,.1);
+  border-bottom:1px solid rgba(245,166,35,.1);
+  border-radius:0 0 4px 0; z-index:62; display:none;
+}
+#instr-panel.show { display:block; }
+.ip-hdr { padding:11px 16px; border-bottom:1px solid rgba(245,166,35,.08); display:flex; align-items:center; gap:8px; }
+.ip-hdr-title { font-family:var(--head); font-size:8px; font-weight:700; letter-spacing:3px; color:var(--amber); }
+.live-pill { display:flex; align-items:center; gap:4px; background:rgba(240,54,74,.07); border:1px solid rgba(240,54,74,.18); border-radius:10px; padding:2px 7px; margin-left:auto; }
+.live-dot { width:5px; height:5px; border-radius:50%; background:var(--red); animation:blink .7s infinite; }
+.live-text { font-size:6px; letter-spacing:1px; color:var(--red); }
+.ip-metrics { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+.ip-m { padding:9px 16px; border-bottom:1px solid rgba(255,255,255,.025); }
+.ip-m:nth-child(even) { border-left:1px solid rgba(255,255,255,.025); }
+.ip-ml { font-size:6px; letter-spacing:1.5px; color:var(--text3); text-transform:uppercase; }
+.ip-mv { font-family:var(--head); font-size:13px; font-weight:700; color:var(--teal); line-height:1.2; }
+.ip-actions { padding:10px 16px; display:flex; gap:6px; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,.03); }
+.ip-btn { padding:6px 10px; font-size:7px; letter-spacing:1.5px; font-family:var(--head); font-weight:700; border:1px solid; border-radius:3px; cursor:pointer; background:transparent; transition:all .12s; text-transform:uppercase; }
+.ip-btn.amber { color:var(--amber); border-color:rgba(245,166,35,.25); }
+.ip-btn.amber:hover { background:rgba(245,166,35,.08); }
+.ip-btn.red { color:var(--red); border-color:rgba(240,54,74,.25); }
+.ip-btn.red:hover { background:rgba(240,54,74,.08); }
+.ip-btn.teal { color:var(--teal); border-color:rgba(14,207,176,.25); }
+.ip-btn.teal:hover { background:rgba(14,207,176,.08); }
+
+/* ═══════════════════════════════════════════
+   DEBRIEF OVERLAY
+═══════════════════════════════════════════ */
+#debrief {
+  position:fixed; inset:0; z-index:9500;
+  background:rgba(0,0,0,.88); backdrop-filter:blur(8px);
+  display:none; align-items:center; justify-content:center;
+}
+#debrief.show { display:flex; }
+.db-box {
+  background:var(--surface); border:1px solid var(--border);
+  border-top:2px solid var(--teal2); border-radius:6px;
+  padding:36px 40px; min-width:480px; max-width:600px;
+}
+.db-title { font-family:var(--head); font-size:11px; font-weight:800; letter-spacing:5px; color:var(--teal2); margin-bottom:5px; }
+.db-sub { font-size:8px; letter-spacing:2px; color:var(--text3); margin-bottom:24px; font-family:var(--mono); }
+.db-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.db-metric { background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:12px 14px; }
+.db-ml { font-size:7px; letter-spacing:2px; color:var(--text3); text-transform:uppercase; margin-bottom:5px; font-family:var(--head); }
+.db-mv { font-family:var(--head); font-size:20px; font-weight:800; color:var(--teal); }
+.db-rows { border:1px solid var(--border); border-radius:4px; overflow:hidden; margin-bottom:20px; }
+.db-row { display:flex; justify-content:space-between; align-items:center; padding:8px 14px; border-bottom:1px solid var(--border); font-size:8px; }
+.db-row:last-child { border-bottom:none; }
+.db-row span { color:var(--teal); font-family:var(--head); font-weight:700; font-size:11px; }
+.db-actions { display:flex; gap:8px; justify-content:flex-end; }
+.db-btn { padding:10px 24px; font-family:var(--head); font-size:8px; font-weight:700; letter-spacing:3px; border:1px solid; border-radius:3px; cursor:pointer; background:transparent; transition:all .15s; text-transform:uppercase; }
+.db-btn.teal   { color:var(--teal2); border-color:rgba(14,207,176,.3); }
+.db-btn.teal:hover { background:rgba(14,207,176,.07); }
+.db-btn.export { color:var(--amber); border-color:rgba(245,166,35,.3); }
+.db-btn.export:hover { background:rgba(245,166,35,.07); }
+
+/* ═══════════════════════════════════════════
+   GRAB INDICATOR
+═══════════════════════════════════════════ */
+#grab-indicator {
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,.75); border:1px solid var(--purple);
+  border-radius:20px; padding:6px 18px; color:var(--purple);
+  font-size:9px; letter-spacing:2px; font-family:var(--head);
+  z-index:100; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap;
+}
+#grab-indicator.show { opacity:1; }
+
+/* ═══════════════════════════════════════════
+   KEYBOARD HINT
+═══════════════════════════════════════════ */
+#kb-hint {
+  position:fixed; bottom:78px; right:10px; width:178px;
+  background:rgba(8,12,18,.96); border:1px solid var(--border);
+  border-radius:4px; padding:12px; z-index:50; display:none; opacity:0; transition:opacity .2s;
+}
+#kb-hint.show { display:block; opacity:1; }
+.kbh-title { font-size:7px; letter-spacing:3px; color:var(--text3); font-family:var(--head); margin-bottom:10px; text-transform:uppercase; }
+.kb-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid rgba(255,255,255,.03); }
+.kb-key { background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:2px; padding:2px 6px; font-size:8px; color:var(--text2); min-width:22px; text-align:center; }
+.kb-act { font-size:7px; color:var(--text3); }
+
+/* ═══════════════════════════════════════════
+   PATIENT SHELL
+═══════════════════════════════════════════ */
+#patient-shell { position:fixed; inset:0; z-index:7000; display:none; background:#000; }
+#patient-shell.show { display:block; }
+#pat-canvas-wrap { position:absolute; inset:0; }
+#pat-canvas-wrap canvas { width:100% !important; height:100% !important; }
+
+/* Doctor Panel Toggle */
+#doc-panel-toggle {
+  position:fixed; right:0; top:50%; transform:translateY(-50%);
+  width:20px; height:64px;
+  background:rgba(100,160,255,.08); border:1px solid rgba(100,160,255,.18);
+  border-right:none; border-radius:6px 0 0 6px;
+  z-index:9801; cursor:pointer; display:none;
+  align-items:center; justify-content:center;
+  font-size:9px; color:rgba(100,160,255,.5); transition:all .2s;
+}
+#doc-panel-toggle.visible { display:flex; }
+#doc-panel-toggle:hover { background:rgba(100,160,255,.18); color:rgba(100,160,255,.9); }
+
+/* Doctor Panel */
+#doc-panel {
+  position:fixed; top:0; right:-380px; width:360px; height:100vh;
+  background:rgba(6,10,20,.98); border-left:1px solid rgba(100,160,255,.15);
+  z-index:9800; transition:right .32s cubic-bezier(.22,1,.36,1);
+  display:flex; flex-direction:column; overflow-y:auto;
+}
+#doc-panel.show { right:0; }
+.dp-hdr { padding:20px 22px 15px; border-bottom:1px solid rgba(100,160,255,.1); }
+.dp-title { font-family:var(--head); font-size:10px; font-weight:800; letter-spacing:4px; color:#7ab4e8; margin-bottom:3px; }
+.dp-sub { font-size:7px; letter-spacing:2px; color:rgba(100,160,255,.35); font-family:var(--mono); }
+.dp-close { float:right; cursor:pointer; color:rgba(100,160,255,.4); font-size:14px; margin-top:-2px; }
+.dp-close:hover { color:rgba(100,160,255,.8); }
+.dp-section { padding:15px 22px; border-bottom:1px solid rgba(100,160,255,.06); }
+.dp-sl { font-size:7px; letter-spacing:3px; color:rgba(100,160,255,.45); text-transform:uppercase; font-family:var(--head); font-weight:700; margin-bottom:12px; }
+.dp-disease-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.dp-d {
+  padding:10px 11px; border-radius:4px; border:1px solid rgba(100,160,255,.1);
+  background:rgba(100,160,255,.03); cursor:pointer; transition:all .14s;
+  font-family:var(--head); font-size:7px; font-weight:700; letter-spacing:1px;
+  color:var(--text3); display:flex; align-items:center; gap:7px;
+  user-select:none; text-transform:uppercase;
+}
+.dp-d:hover { background:rgba(100,160,255,.08); color:var(--text2); transform:translateX(2px); }
+.dp-d.on { border-color:rgba(100,160,255,.5); color:#fff; }
+.dp-d.healthy.on  { background:rgba(0,200,120,.1); border-color:rgba(0,200,120,.5); color:var(--green); }
+.dp-d.tumor.on    { background:rgba(240,54,74,.08); border-color:rgba(240,54,74,.5); color:var(--red); }
+.dp-d.stenosis.on { background:rgba(245,166,35,.08); border-color:rgba(245,166,35,.5); color:var(--amber); }
+.dp-d.mucus.on    { background:rgba(139,92,246,.08); border-color:rgba(139,92,246,.5); color:var(--purple); }
+.dp-d.asthma.on   { background:rgba(255,120,120,.08); border-color:rgba(255,120,120,.5); color:#ff8888; }
+.dp-d.copd.on     { background:rgba(160,180,200,.08); border-color:rgba(160,180,200,.5); color:#aabbcc; }
+.dp-d-icon { font-size:15px; }
+.dp-trigger-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.dp-t {
+  padding:11px 6px; border-radius:4px; border:1px solid rgba(100,160,255,.1);
+  background:rgba(100,160,255,.03); cursor:pointer; transition:all .14s;
+  font-family:var(--head); font-size:6px; font-weight:700; letter-spacing:1px;
+  color:var(--text3); text-align:center; user-select:none; text-transform:uppercase;
+}
+.dp-t:hover { transform:translateY(-2px); }
+.dp-t:active { transform:scale(.96); }
+.dp-t .dp-ti { font-size:18px; display:block; margin-bottom:5px; }
+.dp-t.smoke:hover    { background:rgba(200,180,100,.1); border-color:rgba(200,180,100,.4); color:#d4c06a; }
+.dp-t.exercise:hover { background:rgba(0,200,120,.1); border-color:rgba(0,200,120,.4); color:var(--green); }
+.dp-t.attack:hover   { background:rgba(240,54,74,.1); border-color:rgba(240,54,74,.5); color:var(--red); }
+.dp-t.inhaler:hover  { background:rgba(0,180,255,.1); border-color:rgba(0,180,255,.4); color:#00b4ff; }
+.dp-t.cough:hover    { background:rgba(245,166,35,.1); border-color:rgba(245,166,35,.4); color:var(--amber); }
+.dp-t.reset-t:hover  { background:rgba(14,207,176,.06); border-color:rgba(14,207,176,.4); color:var(--teal); }
+.dp-sev-row { display:flex; align-items:center; gap:11px; }
+.dp-sev-labels { display:flex; justify-content:space-between; font-size:6px; color:rgba(100,160,255,.4); font-family:var(--mono); margin-bottom:5px; }
+.dp-sev-val { font-family:var(--head); font-size:12px; font-weight:700; color:#7ab4e8; width:34px; text-align:right; }
+.dp-view-opts { display:flex; gap:6px; }
+.dp-vo { flex:1; padding:9px 5px; border-radius:4px; border:1px solid rgba(100,160,255,.1); background:rgba(100,160,255,.03); cursor:pointer; transition:all .14s; font-family:var(--head); font-size:7px; font-weight:700; letter-spacing:.5px; color:var(--text3); text-align:center; user-select:none; text-transform:uppercase; }
+.dp-vo:hover { background:rgba(100,160,255,.08); color:var(--text2); }
+.dp-vo.on { background:rgba(100,160,255,.12); border-color:rgba(100,160,255,.4); color:#7ab4e8; }
+.dp-nav-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.dp-nav { padding:9px 7px; border-radius:4px; border:1px solid rgba(100,160,255,.1); background:rgba(100,160,255,.03); cursor:pointer; transition:all .14s; font-family:var(--head); font-size:7px; font-weight:700; letter-spacing:.5px; color:var(--text3); text-align:center; user-select:none; text-transform:uppercase; }
+.dp-nav:hover { background:rgba(100,160,255,.1); color:var(--text2); transform:translateY(-1px); }
+.dp-status { margin:11px 0 0; padding:9px 11px; background:rgba(0,200,120,.05); border:1px solid rgba(0,200,120,.12); border-radius:4px; font-family:var(--mono); font-size:7px; color:rgba(0,200,120,.7); line-height:2; }
+.dp-depth-wrap { padding:14px 22px; border-top:1px solid rgba(100,160,255,.06); margin-top:auto; }
+.dp-depth-lbl { font-size:7px; letter-spacing:2px; color:rgba(100,160,255,.3); font-family:var(--mono); margin-bottom:6px; }
+#dp-depth-bar { height:3px; background:rgba(100,160,255,.08); border-radius:2px; overflow:hidden; }
+#dp-depth-fill { height:100%; background:linear-gradient(90deg,#4a7fa8,#7ab4e8); border-radius:2px; width:0%; transition:width .1s; }
+
+/* ═══════════════════════════════════════════
+   VR STATUS INDICATOR (topbar)
+═══════════════════════════════════════════ */
+#vr-status {
+  display:flex; align-items:center; gap:6px;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:20px; padding:4px 10px; margin-left:8px;
+  font-size:7px; letter-spacing:1.5px; color:var(--text3);
+  font-family:var(--head); font-weight:600;
+  transition:all .3s; flex-shrink:0;
+}
+#vr-status.active {
+  border-color:rgba(139,92,246,.4);
+  background:rgba(139,92,246,.1);
+  color:var(--purple);
+}
+#vr-status-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--text3); transition:all .3s; flex-shrink:0;
+}
+#vr-status.active #vr-status-dot {
+  background:var(--purple);
+  box-shadow:0 0 8px var(--purple);
+  animation:blink 1.8s infinite;
+}
+
+/* Controller hint overlay — appears briefly on VR enter */
+#vr-hint {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+  background:rgba(8,12,16,.96); border:1px solid rgba(139,92,246,.35);
+  border-radius:6px; padding:16px 28px; z-index:800;
+  pointer-events:none; opacity:0; transition:opacity .3s;
+  font-family:var(--mono); font-size:9px; color:var(--text2);
+  line-height:2.2; text-align:center; white-space:nowrap;
+}
+#vr-hint.show { opacity:1; }
+#vr-hint strong { color:var(--purple); font-weight:500; }
+
+/* ═══════════════════════════════════════════
+   SURGICAL PLANNING — Patient Loader Banner
+   (new for v19 — shows when no DICOM loaded)
+═══════════════════════════════════════════ */
+#patient-loader {
+  position:absolute; top:calc(var(--bar-h) + 8px); left:50%; transform:translateX(-50%);
+  background:var(--surface); border:1px solid rgba(245,166,35,.2);
+  border-top:2px solid var(--amber); border-radius:4px;
+  padding:10px 20px; z-index:55; display:flex; align-items:center; gap:14px;
+  pointer-events:auto; cursor:pointer; transition:all .2s;
+}
+#patient-loader:hover { background:var(--surface2); border-color:rgba(245,166,35,.4); }
+.pl-icon { font-size:16px; flex-shrink:0; }
+.pl-text { }
+.pl-title { font-family:var(--head); font-size:8px; font-weight:700; letter-spacing:2.5px; color:var(--amber); text-transform:uppercase; }
+.pl-sub { font-size:7px; color:var(--text3); margin-top:2px; letter-spacing:.5px; }
+.pl-action { font-family:var(--head); font-size:7px; font-weight:700; letter-spacing:2px; color:var(--amber); border:1px solid rgba(245,166,35,.3); border-radius:2px; padding:4px 10px; text-transform:uppercase; flex-shrink:0; }
 </style>
 </head>
 <body>
 <div id="cur"></div>
 <div id="grab-indicator">🤲 GRAB TO ROTATE · SQUEEZE TO ZOOM</div>
 
-<div id="mode-sel">
-  <div class="ms-header">
-    <div class="ms-eyebrow">neumAC R&amp;I · Área Sanitaria de A Coruña y Cee</div>
-    <div class="ms-title">PNEUMO<b>·</b>VR<span class="ms-ver">v18</span></div>
-    <div class="ms-sub">Bronchoscopy Simulation System · Fusion Edition · Select operating mode</div>
-  </div>
-  <div class="ms-grid">
-    <div class="mc student" onclick="selectMode('student')">
-      <span class="mc-icon">🎓</span><div class="mc-name">Med Student</div>
-      <div class="mc-desc">Guided exploration with anatomical labels, clinical pearls and progressive hints</div>
-      <div class="mc-tags"><span class="mc-tag">Labels on</span><span class="mc-tag">Hints</span><span class="mc-tag">Seg cards</span></div>
-    </div>
-    <div class="mc resident" onclick="selectMode('resident')">
-      <div class="mc-lock">🔒</div><span class="mc-icon">🏥</span><div class="mc-name">Resident</div>
-      <div class="mc-desc">Full simulation: scoring, scope physics, wall collision, mucosal bleeding, debrief</div>
-      <div class="mc-tags"><span class="mc-tag">Scored</span><span class="mc-tag">Collision</span><span class="mc-tag">Bleeding</span></div>
-    </div>
-    <div class="mc patient" onclick="selectMode('patient')">
-      <span class="mc-icon">🫁</span><div class="mc-name">Patient</div>
-      <div class="mc-desc">Visual-only tour · Doctor controls hidden panel · ES/GL/EN · No clinical UI</div>
-      <div class="mc-tags"><span class="mc-tag">Visual only</span><span class="mc-tag">Doctor ctrl</span></div>
-    </div>
-    <div class="mc instructor" onclick="selectMode('instructor')">
-      <div class="mc-lock">🔒</div><span class="mc-icon">📋</span><div class="mc-name">Instructor</div>
-      <div class="mc-desc">Live observation, event injection, cough/bleed/secretion and session export</div>
-      <div class="mc-tags"><span class="mc-tag">Observer</span><span class="mc-tag">Inject</span></div>
-    </div>
-  </div>
-  <div class="ms-footer">
-    <div class="ms-institution">neumAC R&amp;I — Pulmonology Division · v18 Fusion</div>
-    <div class="ms-note">🔒 PIN: 1234 · Patient mode: press D for doctor panel · All processing local · No face detection</div>
-  </div>
-</div>
-
-<div id="pin-overlay">
-  <div class="pin-box">
-    <div class="pin-title" id="pin-title">RESIDENT MODE</div>
-    <div class="pin-sub">Enter 4-digit PIN to continue</div>
-    <div class="pin-dots">
-      <div class="pd" id="pd0"></div><div class="pd" id="pd1"></div>
-      <div class="pd" id="pd2"></div><div class="pd" id="pd3"></div>
-    </div>
-    <div class="pin-keys">
-      <div class="pk" onclick="pinKey('1')">1</div><div class="pk" onclick="pinKey('2')">2</div><div class="pk" onclick="pinKey('3')">3</div>
-      <div class="pk" onclick="pinKey('4')">4</div><div class="pk" onclick="pinKey('5')">5</div><div class="pk" onclick="pinKey('6')">6</div>
-      <div class="pk" onclick="pinKey('7')">7</div><div class="pk" onclick="pinKey('8')">8</div><div class="pk" onclick="pinKey('9')">9</div>
-      <div class="pk" onclick="pinKey('back')" style="font-size:9px">←</div>
-      <div class="pk" onclick="pinKey('0')">0</div>
-      <div class="pk" onclick="pinKey('cancel')" style="font-size:7px">✕</div>
-    </div>
-    <div class="pin-err" id="pin-err"></div>
-  </div>
-</div>
-
-<div id="patient-shell"><div id="pat-canvas-wrap"></div></div>
-<div id="doc-panel-toggle" onclick="toggleDocPanel()">◀ DR</div>
-
-<div id="doc-panel">
-  <div class="dp-hdr">
-    <span class="dp-close" onclick="toggleDocPanel()">✕</span>
-    <div class="dp-title">DOCTOR CONSOLE</div>
-    <div class="dp-sub">neumAC R&amp;I · Patient visual control · Press D to toggle</div>
-  </div>
-  <div class="dp-section">
-    <div class="dp-sl">Disease State</div>
-    <div class="dp-disease-grid">
-      <div class="dp-d healthy on" onclick="setPatDisease('healthy')"><span class="dp-d-icon">💚</span>Healthy</div>
-      <div class="dp-d tumor" onclick="setPatDisease('tumor')"><span class="dp-d-icon">🔴</span>Tumor LUL</div>
-      <div class="dp-d stenosis" onclick="setPatDisease('stenosis')"><span class="dp-d-icon">🟡</span>Stenosis RML</div>
-      <div class="dp-d mucus" onclick="setPatDisease('mucus')"><span class="dp-d-icon">🟣</span>Mucus Plug</div>
-      <div class="dp-d asthma" onclick="setPatDisease('asthma')"><span class="dp-d-icon">🩸</span>Asthma</div>
-      <div class="dp-d copd" onclick="setPatDisease('copd')"><span class="dp-d-icon">🫁</span>COPD</div>
-    </div>
-  </div>
-  <div class="dp-section">
-    <div class="dp-sl">Trigger Events</div>
-    <div class="dp-trigger-grid">
-      <div class="dp-t smoke" onclick="patTrigger('smoke')"><span class="dp-ti">🚬</span>Smoke</div>
-      <div class="dp-t exercise" onclick="patTrigger('exercise')"><span class="dp-ti">🏃</span>Exercise</div>
-      <div class="dp-t attack" onclick="patTrigger('attack')"><span class="dp-ti">⚡</span>Attack</div>
-      <div class="dp-t inhaler" onclick="patTrigger('inhaler')"><span class="dp-ti">💨</span>Inhaler</div>
-      <div class="dp-t cough" onclick="patTrigger('cough')"><span class="dp-ti">😮‍💨</span>Cough</div>
-      <div class="dp-t reset-t" onclick="patTrigger('reset')"><span class="dp-ti">↺</span>Reset</div>
-    </div>
-  </div>
-  <div class="dp-section">
-    <div class="dp-sl">Severity</div>
-    <div class="dp-sev-labels"><span>Mild</span><span>Moderate</span><span>Severe</span></div>
-    <div class="dp-sev-row">
-      <input type="range" id="dp-sev" min="0" max="100" value="50" oninput="setPatSeverity(this.value)" style="flex:1;accent-color:#7ab4e8">
-      <div class="dp-sev-val" id="dp-sev-val">50%</div>
-    </div>
-  </div>
-  <div class="dp-section">
-    <div class="dp-sl">View</div>
-    <div class="dp-view-opts">
-      <div class="dp-vo on" id="dv-ext" onclick="setDocView('ext')">🫁 Lungs</div>
-      <div class="dp-vo" id="dv-scope" onclick="setDocView('scope')">🔭 Scope</div>
-      <div class="dp-vo" id="dv-both" onclick="setDocView('both')">⊞ Both</div>
-    </div>
-  </div>
-  <div class="dp-section">
-    <div class="dp-sl">Navigate to</div>
-    <div class="dp-nav-grid">
-      <div class="dp-nav" onclick="patNavJump('trachea')">⬆ Trachea</div>
-      <div class="dp-nav" onclick="patNavJump('carina')">✖ Carina</div>
-      <div class="dp-nav" onclick="patNavJump('left')">← Left lung</div>
-      <div class="dp-nav" onclick="patNavJump('right')">→ Right lung</div>
-      <div class="dp-nav" onclick="patNavJump('lesion')" style="grid-column:1/-1">🎯 Jump to lesion</div>
-    </div>
-    <div class="dp-status" id="dp-status">Disease: Healthy · Sev: 50%<br>Trigger: — · View: Lungs</div>
-  </div>
-  <div class="dp-depth-wrap">
-    <div class="dp-depth-lbl">SCOPE DEPTH</div>
-    <div id="dp-depth-bar"><div id="dp-depth-fill"></div></div>
-  </div>
-</div>
-
+<!-- ═══════════════════════════════════════════
+     DEBRIEF
+═══════════════════════════════════════════ -->
 <div id="debrief">
   <div class="db-box">
-    <div class="db-header">
-      <div class="db-institution">neumAC R&amp;I · Área Sanitaria de A Coruña y Cee · v18 Fusion</div>
-      <div class="db-title">SESSION DEBRIEF</div>
-      <div class="db-case">RESIDENT MODE · <span id="db-date"></span></div>
+    <div class="db-title">SESSION DEBRIEF</div>
+    <div class="db-sub" id="db-mode-lbl">SURGICAL PLANNING SESSION</div>
+    <div class="db-grid">
+      <div class="db-metric"><div class="db-ml">Final Score</div><div class="db-mv" id="db-score">100</div></div>
+      <div class="db-metric"><div class="db-ml">Duration</div><div class="db-mv" id="db-time">00:00</div></div>
+      <div class="db-metric"><div class="db-ml">Segments Visited</div><div class="db-mv" id="db-segs">0</div></div>
+      <div class="db-metric"><div class="db-ml">Wall Contacts</div><div class="db-mv" id="db-walls" style="color:var(--amber)">0</div></div>
     </div>
-    <div class="db-body">
-      <div class="db-grid">
-        <div class="db-metric"><div class="db-mv" id="db-score">—</div><div class="db-ml">Overall Score</div></div>
-        <div class="db-metric"><div class="db-mv" id="db-time">—</div><div class="db-ml">Procedure Time</div></div>
-        <div class="db-metric"><div class="db-mv" id="db-contacts">—</div><div class="db-ml">Wall Contacts</div></div>
-      </div>
-      <div class="db-section">
-        <div class="db-sh">Navigation Performance</div>
-        <div class="db-row">Time to first carina<span id="db-carina">—</span></div>
-        <div class="db-row">Path efficiency<span id="db-eff">—</span></div>
-        <div class="db-row">Segments visited<span id="db-segs">—</span></div>
-        <div class="db-row">Total movements<span id="db-moves">—</span></div>
-      </div>
-      <div class="db-section">
-        <div class="db-sh">Clinical Findings</div>
-        <div class="db-found" id="db-found"></div>
-      </div>
-      <div class="db-section">
-        <div class="db-sh">Procedure Actions</div>
-        <div class="db-row">Biopsies taken<span id="db-biops">—</span></div>
-        <div class="db-row">Annotations placed<span id="db-anns">—</span></div>
-        <div class="db-row">Mucosal bleed events<span id="db-bleeds" style="color:var(--red)">—</span></div>
-      </div>
+    <div class="db-rows">
+      <div class="db-row">Pathologies found<span id="db-paths">0</span></div>
+      <div class="db-row">Biopsy samples<span id="db-bio">0</span></div>
+      <div class="db-row">Annotations placed<span id="db-anns">—</span></div>
+      <div class="db-row">Mucosal bleed events<span id="db-bleeds" style="color:var(--red)">—</span></div>
     </div>
+    <div id="db-found" style="display:none"></div>
     <div class="db-actions">
       <button class="db-btn export" onclick="exportDebrief()">EXPORT JSON</button>
-      <button class="db-btn teal" onclick="returnToModeSelect()">NEW SESSION</button>
       <button class="db-btn teal" onclick="closeDebrief()">CLOSE</button>
     </div>
   </div>
 </div>
 
-<div id="splash" style="display:none">
-  <div class="sey">Pulmonology Division · Fusion Edition</div>
-  <div class="stitle">PNEUMO<b>·</b>VR</div>
-  <div class="sver">Anatomical Bronchoscopy Simulator · v18 Fusion</div>
-  <div style="margin-top:4px;text-align:center">
-    <div style="font-family:var(--head);font-size:11px;font-weight:700;letter-spacing:5px;color:var(--teal);opacity:.75">neumAC R&amp;I</div>
-    <div style="font-family:var(--mono);font-size:7px;letter-spacing:1.5px;color:var(--dim2);margin-top:2px">Área Sanitaria de A Coruña y Cee</div>
+<!-- BOOT SCREEN -->
+<div id="splash" style="display:flex">
+  <div class="splash-inner">
+    <div class="sey">neumAC R&amp;I · Área Sanitaria de A Coruña y Cee</div>
+    <div class="stitle">PNEUMO<span class="stitle-dot">·</span><em>VR</em></div>
+    <div class="sver">Bronchoscopic Surgical Planning System</div>
+    <div class="sln"></div>
+    <button id="sbtn"><span>INITIALISE SYSTEM</span></button>
+    <div class="snote">🤲 Grab lung to rotate · 👆 Point to navigate · IJKL deflect · [?] Keys</div>
   </div>
-  <div class="sln"></div>
-  <div class="sdesc">PBR dual-channel vasculature · Scope resistance physics · Mucosal bleeding on trauma<br>Biopsy site bleeding · Idle lung auto-rotation · Full v16 gesture engine · 23-segment anatomy cards</div>
-  <div class="sfeatures">
-    <div class="sf"><div class="sfi">🫁</div><div class="sfl">PBR Lungs</div></div>
-    <div class="sf"><div class="sfi">🩸</div><div class="sfl">Vasculature</div></div>
-    <div class="sf"><div class="sfi">⚡</div><div class="sfl">Resistance</div></div>
-    <div class="sf"><div class="sfi">💊</div><div class="sfl">Disease VFX</div></div>
-    <div class="sf"><div class="sfi">🤲</div><div class="sfl">Grab &amp; Zoom</div></div>
-    <div class="sf"><div class="sfi">🩸</div><div class="sfl">Bleeding</div></div>
-    <div class="sf"><div class="sfi">🔭</div><div class="sfl">Fisheye</div></div>
-    <div class="sf"><div class="sfi">📋</div><div class="sfl">Debrief</div></div>
-  </div>
-  <button id="sbtn"><span>LAUNCH SYSTEM</span></button>
-  <div class="snote">🤲 Grab lung to rotate · Squeeze to zoom · 👆 Point to navigate · [D] Doctor panel · [?] Keys</div>
 </div>
-
+<div id="mode-sel" style="display:none"></div>
+<div id="patient-shell" style="display:none"></div>
+<div id="dp-sev-val" style="display:none"></div>
+<div id="dp-status" style="display:none"></div>
+<div id="pin-overlay" style="display:none"><div id="pin-title"></div><div id="pin-err"></div><div id="pd0"></div><div id="pd1"></div><div id="pd2"></div><div id="pd3"></div></div>
+<!-- ═══════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════ -->
 <div id="app" style="display:none">
+
+  <!-- TOP BAR -->
   <div id="tb">
-    <div style="display:flex;align-items:center;gap:14px">
-      <div class="brand">PNEUMO<b>·</b>VR<sub>v18</sub></div>
-      <div style="border-left:1px solid var(--bdr);padding-left:12px;line-height:1.3">
-        <div style="font-family:var(--head);font-size:8px;font-weight:700;letter-spacing:3px;color:var(--teal);opacity:.8">neumAC R&amp;I</div>
-        <div style="font-family:var(--mono);font-size:5.5px;letter-spacing:1px;color:var(--dim2);margin-top:1px">Área Sanitaria de A Coruña y Cee</div>
+    <div class="brand-block">
+      <div class="brand-logo">PNEUMO<em>·</em>VR</div>
+      <div class="brand-ver">v20 SURGICAL</div>
+      <div class="brand-divider"></div>
+      <div class="brand-inst">
+        <div class="brand-inst-name">neumAC R&amp;I</div>
+        <div class="brand-inst-sub">Área Sanitaria de A Coruña y Cee</div>
       </div>
     </div>
+
     <div class="tabs">
       <div class="tab" id="tab-ov" onclick="setView('overview')">🫁 EXTERNAL</div>
       <div class="tab on" id="tab-du" onclick="setView('dual')">⊞ DUAL</div>
       <div class="tab" id="tab-br" onclick="setView('scope')">🔭 SCOPE</div>
     </div>
+
     <div class="tb-stats">
       <div class="ts"><div class="tsl">FPS</div><div class="tsv" id="fps-v">—</div></div>
       <div class="ts"><div class="tsl">Depth</div><div class="tsv" id="dep-v">0mm</div></div>
-      <div class="ts"><div class="tsl">Segment</div><div class="tsv" id="seg-v">—</div></div>
+      <div class="ts" style="min-width:80px;max-width:90px;"><div class="tsl">Segment</div><div class="tsv" id="seg-v" style="font-size:10px;">—</div></div>
       <div class="ts"><div class="tsl">Deflect</div><div class="tsv" id="defl-v">0°</div></div>
       <div class="ts"><div class="tsl">Resist</div><div class="tsv" id="resist-v" style="color:var(--green)">0%</div></div>
       <div class="ts"><div class="tsl">Time</div><div class="tsv" id="ses-t">00:00</div></div>
       <div class="ts"><div class="tsl">Hands</div><div class="tsv" id="hn-v">0</div></div>
     </div>
-    <div class="spill"><div class="sdot" id="sdot"></div><span class="spillt" id="sdot-l">INIT</span></div>
-    <div id="mode-badge" onclick="returnToModeSelect()">🎓 STUDENT</div>
+
+    <div class="status-pill">
+      <div class="sdot" id="sdot"></div>
+      <span class="spillt" id="sdot-l">INIT</span>
+    </div>
+    <div id="vr-status">
+      <div id="vr-status-dot"></div>
+      <span id="vr-status-lbl">VR READY</span>
+    </div>
   </div>
 
+  <!-- VIEWS -->
   <div id="views">
     <div id="ext-view">
       <canvas id="c-ext"></canvas>
@@ -574,27 +1056,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <svg id="scope-svg">
         <defs>
           <radialGradient id="sg" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#00f0d0" stop-opacity=".9"/>
-            <stop offset="55%" stop-color="#00f0d0" stop-opacity=".3"/>
-            <stop offset="100%" stop-color="#00f0d0" stop-opacity="0"/>
+            <stop offset="0%" stop-color="#0ecfb0" stop-opacity=".9"/>
+            <stop offset="55%" stop-color="#0ecfb0" stop-opacity=".3"/>
+            <stop offset="100%" stop-color="#0ecfb0" stop-opacity="0"/>
           </radialGradient>
           <filter id="gb2"><feGaussianBlur stdDeviation="2.5"/></filter>
         </defs>
         <g id="svg-group" opacity="0">
-          <circle id="svh" cx="0" cy="0" r="20" fill="url(#sg)" filter="url(#gb2)"/>
-          <circle id="svr2" cx="0" cy="0" r="16" fill="none" stroke="#00f0d0" stroke-width=".5" stroke-dasharray="3 3" opacity=".25"/>
-          <circle id="svr" cx="0" cy="0" r="9" fill="none" stroke="#00f0d0" stroke-width="1" opacity=".65"/>
-          <circle id="svd" cx="0" cy="0" r="3.5" fill="#00f0d0" opacity=".9"/>
-          <line id="svhl" x1="-22" y1="0" x2="22" y2="0" stroke="#00f0d0" stroke-width=".5" opacity=".35"/>
-          <line id="svvl" x1="0" y1="-22" x2="0" y2="22" stroke="#00f0d0" stroke-width=".5" opacity=".35"/>
+          <circle id="svh"  cx="0" cy="0" r="20" fill="url(#sg)" filter="url(#gb2)"/>
+          <circle id="svr2" cx="0" cy="0" r="16" fill="none" stroke="#0ecfb0" stroke-width=".5" stroke-dasharray="3 3" opacity=".25"/>
+          <circle id="svr"  cx="0" cy="0" r="9"  fill="none" stroke="#0ecfb0" stroke-width="1" opacity=".65"/>
+          <circle id="svd"  cx="0" cy="0" r="3.5" fill="#0ecfb0" opacity=".9"/>
+          <line id="svhl" x1="-22" y1="0" x2="22" y2="0" stroke="#0ecfb0" stroke-width=".5" opacity=".35"/>
+          <line id="svvl" x1="0" y1="-22" x2="0" y2="22" stroke="#0ecfb0" stroke-width=".5" opacity=".35"/>
         </g>
       </svg>
+
+      <!-- Surgical Planning Patient Loader Banner -->
+      <div id="patient-loader" onclick="showToast('DICOM pipeline coming soon · Using procedural model','info')">
+        <div class="pl-icon">📂</div>
+        <div class="pl-text">
+          <div class="pl-title">No patient DICOM loaded</div>
+          <div class="pl-sub">Using procedural bronchial tree model</div>
+        </div>
+        <div class="pl-action">LOAD CT</div>
+      </div>
     </div>
+
     <div id="bro-view">
       <canvas id="c-bro"></canvas>
       <div id="bro-vig"></div>
       <div id="bro-hud">
-        <div class="bh" id="bh-tl">VIRTUAL BRONCHOSCOPE v18<br>Anatomical · Fisheye 120°</div>
+        <div class="bh" id="bh-tl">VIRTUAL BRONCHOSCOPE v19<br>Anatomical · Fisheye 120°</div>
         <div class="bh" id="bh-tr">DEPTH <span id="bh-dep">0</span>mm<br>t=<span id="bh-t">0.000</span></div>
         <div class="bh" id="bh-bl">MODE <span id="bh-mode">NAV</span><br>GEN <span id="bh-gen">0</span></div>
         <div class="bh" id="bh-br"><span id="bh-seg">TRACHEA</span><br>ACTIVE</div>
@@ -616,15 +1109,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     </div>
   </div>
 
+  <!-- LEFT PANEL: Gesture Engine -->
   <div id="lp">
     <div class="panel-hdr" onclick="togglePanel('lp')">
-      <span class="ph-t">Gesture Engine v18</span>
+      <span class="ph-t">Gesture Engine v19</span>
       <span class="ph-arr open" id="lp-arr">▶</span>
     </div>
     <div class="panel-body" id="lp-body">
       <div class="grow">
-        <div class="gring"><svg viewBox="0 0 44 44"><circle class="gr-bg" cx="22" cy="22" r="18"/><circle class="gr-fg" id="gr-fg" cx="22" cy="22" r="18"/></svg><div class="grv" id="gr-v">0%</div></div>
-        <div><div id="gname">—</div><div id="gsub">Show hand</div><div id="gbadge">WAITING</div></div>
+        <div class="gring">
+          <svg viewBox="0 0 44 44">
+            <circle class="gr-bg" cx="22" cy="22" r="18"/>
+            <circle class="gr-fg" id="gr-fg" cx="22" cy="22" r="18"/>
+          </svg>
+          <div class="grv" id="gr-v">0%</div>
+        </div>
+        <div>
+          <div id="gname">—</div>
+          <div id="gsub">Show hand</div>
+          <div id="gbadge">WAITING</div>
+        </div>
       </div>
       <div id="tracking-quality"></div>
       <div class="hrow"><div class="hl">Point</div><div class="ht"><div class="hf" id="hb-pt" style="width:0%"></div></div></div>
@@ -635,34 +1139,67 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div class="br"><span class="brl">LEFT</span><span class="brv" id="lp-v">0%</span></div>
       <div class="btrack"><div class="bf r" id="lb" style="width:0%"></div></div>
       <div class="fg">
-        <div class="fc"><div class="fcl">LEFT</div><div class="fbs" id="l-fds"><div class="fb" style="height:12px"></div><div class="fb" style="height:16px"></div><div class="fb" style="height:18px"></div><div class="fb" style="height:16px"></div><div class="fb" style="height:12px"></div></div><div class="fcg" id="l-g">—</div></div>
-        <div class="fc"><div class="fcl">RIGHT</div><div class="fbs" id="r-fds"><div class="fb" style="height:12px"></div><div class="fb" style="height:16px"></div><div class="fb" style="height:18px"></div><div class="fb" style="height:16px"></div><div class="fb" style="height:12px"></div></div><div class="fcg b" id="r-g">—</div></div>
+        <div class="fc">
+          <div class="fcl">LEFT</div>
+          <div class="fbs" id="l-fds">
+            <div class="fb" style="height:12px"></div><div class="fb" style="height:16px"></div>
+            <div class="fb" style="height:18px"></div><div class="fb" style="height:16px"></div><div class="fb" style="height:12px"></div>
+          </div>
+          <div class="fcg" id="l-g">—</div>
+        </div>
+        <div class="fc">
+          <div class="fcl">RIGHT</div>
+          <div class="fbs" id="r-fds">
+            <div class="fb" style="height:12px"></div><div class="fb" style="height:16px"></div>
+            <div class="fb" style="height:18px"></div><div class="fb" style="height:16px"></div><div class="fb" style="height:12px"></div>
+          </div>
+          <div class="fcg b" id="r-g">—</div>
+        </div>
       </div>
       <div class="gmap">👆 <span>Point</span> → Advance<br>✋ <span>Open</span> → Retract<br>🤲 <span>Grab(2 hands)</span> → Rotate/Zoom<br>✌ <span>Peace</span> → Rotate model<br>🤏 <span>Pinch+hold</span> → Clinical<br>👊 <span>Fist</span> → Reset</div>
     </div>
   </div>
 
+  <!-- RIGHT PANEL: Navigation & Clinical -->
   <div id="rp">
-    <div class="panel-hdr" onclick="togglePanel('rp')"><span class="ph-t">Navigation &amp; Clinical</span><span class="ph-arr open" id="rp-arr">▶</span></div>
+    <div class="panel-hdr" onclick="togglePanel('rp')">
+      <span class="ph-t">Navigation &amp; Clinical</span>
+      <span class="ph-arr open" id="rp-arr">▶</span>
+    </div>
     <div id="rp-body">
-      <canvas id="mapcan" width="188" height="106" style="margin:7px 12px 0;width:calc(100% - 24px);height:106px
-;display:block;border:1px solid rgba(0,200,160,.08);border-radius:1px;background:rgba(0,0,0,.4)"></canvas>
+      <div style="margin:8px 14px 0 14px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:7px;letter-spacing:2px;color:var(--text3);font-family:var(--head);text-transform:uppercase;">Airway Map</span>
+        <span style="font-size:7px;color:var(--teal);font-family:var(--mono);" id="map-gen">Gen 0</span>
+      </div>
+      <canvas id="mapcan" width="200" height="110" style="margin:4px 14px 0;width:calc(100% - 28px);height:110px;display:block;border:1px solid rgba(14,207,176,.08);border-radius:3px;background:rgba(0,0,0,.4)"></canvas>
       <div class="spos">📍 <span id="spos-l">TRACHEA</span></div>
       <div class="cmg">
-        <button class="cmb on" id="cm-nav" onclick="setClinMode('nav')"><span class="ci">🔭</span><span class="cl">Navigate</span></button>
-        <button class="cmb" id="cm-bio" onclick="setClinMode('biopsy')"><span class="ci">🔬</span><span class="cl">Biopsy</span></button>
-        <button class="cmb" id="cm-mes" onclick="setClinMode('measure')"><span class="ci">📏</span><span class="cl">Measure</span></button>
-        <button class="cmb" id="cm-ann" onclick="setClinMode('annotate')"><span class="ci">📍</span><span class="cl">Annotate</span></button>
+        <button class="cmb on"  id="cm-nav" onclick="setClinMode('nav')"><span class="ci">🔭</span><span class="cl">Navigate</span></button>
+        <button class="cmb"     id="cm-bio" onclick="setClinMode('biopsy')"><span class="ci">🔬</span><span class="cl">Biopsy</span></button>
+        <button class="cmb"     id="cm-mes" onclick="setClinMode('measure')"><span class="ci">📏</span><span class="cl">Measure</span></button>
+        <button class="cmb"     id="cm-ann" onclick="setClinMode('annotate')"><span class="ci">📍</span><span class="cl">Annotate</span></button>
       </div>
-      <div class="panel-hdr" style="border-top:1px solid var(--bdr);cursor:default"><span class="ph-t">Pathologies</span></div>
-      <div class="pi-item" id="pi-tumor" style="cursor:pointer" onclick="jumpToPathology('tumor')"><div class="pid" style="background:var(--red)"></div>Tumor LUL (polypoid)<span class="pdist" id="pd-tumor">—</span></div>
-      <div class="pi-item" id="pi-sten" style="cursor:pointer" onclick="jumpToPathology('sten')"><div class="pid" style="background:var(--amber)"></div>Stenosis RML (concentric)<span class="pdist" id="pd-sten">—</span></div>
-      <div class="pi-item" id="pi-mucus" style="cursor:pointer" onclick="jumpToPathology('mucus')"><div class="pid" style="background:var(--purple)"></div>Mucus Plug LLL<span class="pdist" id="pd-mucus">—</span></div>
-      <div class="panel-hdr" style="border-top:1px solid var(--bdr);cursor:default"><span class="ph-t">Annotations (<span id="ann-count">0</span>)</span><button onclick="exportSession()" style="font-size:6px;background:rgba(0,200,160,.08);border:1px solid var(--bdr);color:var(--teal);border-radius:2px;padding:2px 6px;cursor:pointer;font-family:var(--head)">EXPORT</button></div>
+      <div class="panel-hdr" style="border-top:1px solid var(--border);cursor:default">
+        <span class="ph-t">Pathologies</span>
+      </div>
+      <div class="pi-item" id="pi-tumor" style="cursor:pointer" onclick="jumpToPathology('tumor')">
+        <div class="pid" style="background:var(--red)"></div>Tumor LUL (polypoid)<span class="pdist" id="pd-tumor">—</span>
+      </div>
+      <div class="pi-item" id="pi-sten" style="cursor:pointer" onclick="jumpToPathology('sten')">
+        <div class="pid" style="background:var(--amber)"></div>Stenosis RML (concentric)<span class="pdist" id="pd-sten">—</span>
+      </div>
+      <div class="pi-item" id="pi-mucus" style="cursor:pointer" onclick="jumpToPathology('mucus')">
+        <div class="pid" style="background:var(--purple)"></div>Mucus Plug LLL<span class="pdist" id="pd-mucus">—</span>
+      </div>
+      <div class="panel-hdr" style="border-top:1px solid var(--border);cursor:default">
+        <span class="ph-t">Annotations (<span id="ann-count">0</span>)</span>
+        <button onclick="exportSession()" style="font-size:7px;background:var(--teal-dim);border:1px solid rgba(14,207,176,.2);color:var(--teal);border-radius:2px;padding:2px 8px;cursor:pointer;font-family:var(--head)">EXPORT</button>
+      </div>
       <div id="ann-list"></div>
     </div>
   </div>
 
+  <!-- BOTTOM LEFT: Calibration -->
   <div id="bpanel-l">
     <div class="bst">Calibration</div>
     <div class="sr"><label>Pinch dist</label><input type="range" id="sl-p" min="20" max="130" value="60"><span class="sv" id="sv-p">60</span></div>
@@ -673,13 +1210,24 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     <div class="sr"><label>Bleed thresh</label><input type="range" id="sl-bt" min="1" max="8" value="3"><span class="sv" id="sv-bt">3</span></div>
   </div>
 
-  <div id="cam-p"><div class="ctag">CAM · LIVE · HANDS ONLY</div><video id="cvid" autoplay playsinline muted></video><canvas id="ccan"></canvas><div id="gdbg"></div></div>
+  <!-- CAMERA PANEL -->
+  <div id="cam-p">
+    <div class="ctag">CAM · LIVE · HANDS ONLY</div>
+    <video id="cvid" autoplay playsinline muted></video>
+    <canvas id="ccan"></canvas>
+    <div id="gdbg"></div>
+  </div>
 
+  <!-- BOTTOM HUD -->
   <div id="bi"><div id="bi-l">Active Segment</div><div id="bi-v">BILATERAL LUNGS</div></div>
+
+  <!-- EFFECTS -->
   <div id="wall-flash"></div>
   <div id="tension-overlay"></div>
   <div id="tension-text"></div>
   <div id="biopsy-bleed"></div>
+
+  <!-- SCORE BAR -->
   <div id="score-bar">
     <div class="sb-item"><div class="sb-v" id="sb-score">100</div><div class="sb-l">Score</div></div>
     <div class="sb-sep"></div>
@@ -689,6 +1237,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     <div class="sb-sep"></div>
     <div class="sb-item"><div class="sb-v" id="sb-bleeds" style="color:var(--red)">0</div><div class="sb-l">Bleeds</div></div>
   </div>
+
+  <!-- SEGMENT CARD -->
   <div id="seg-card">
     <div id="sc-gen">Generation —</div>
     <div id="sc-name">Trachea</div>
@@ -697,8 +1247,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     <div id="sc-pearl">💡 The carina marks the split.</div>
     <div id="sc-dismiss" onclick="document.getElementById('seg-card').classList.remove('show')">dismiss ✕</div>
   </div>
+
+  <!-- INSTRUCTOR PANEL -->
   <div id="instr-panel">
-    <div class="ip-hdr"><div class="ip-hdr-title">INSTRUCTOR CONSOLE</div><div class="live-pill"><div class="live-dot"></div><span class="live-text">LIVE</span></div></div>
+    <div class="ip-hdr">
+      <div class="ip-hdr-title">INSTRUCTOR CONSOLE</div>
+      <div class="live-pill"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
+    </div>
     <div class="ip-metrics">
       <div class="ip-m"><div class="ip-ml">Segment</div><div class="ip-mv" id="ip-seg">—</div></div>
       <div class="ip-m"><div class="ip-ml">Depth</div><div class="ip-mv" id="ip-dep">—</div></div>
@@ -712,6 +1267,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <button class="ip-btn red" onclick="showDebrief()">End &amp; Debrief</button>
     </div>
   </div>
+
+  <!-- KEYBOARD HINT -->
   <div id="kb-hint">
     <div class="kbh-title">Keyboard Shortcuts</div>
     <div class="kb-row"><span class="kb-key">↑↓/WS</span><span class="kb-act">Navigate scope</span></div>
@@ -725,8 +1282,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     <div class="kb-row"><span class="kb-key">Esc</span><span class="kb-act">Full reset</span></div>
     <div class="kb-row"><span class="kb-key">?</span><span class="kb-act">Toggle this panel</span></div>
   </div>
+
   <div id="toast"></div>
-</div>
+  <div id="vr-hint">
+    <strong>LEFT stick Y</strong> → advance / retract &nbsp;·&nbsp;
+    <strong>RIGHT stick</strong> → deflect tip<br>
+    <strong>R trigger</strong> → confirm / biopsy &nbsp;·&nbsp;
+    <strong>L trigger</strong> → enter left branch<br>
+    <strong>A button</strong> → cycle clinical mode &nbsp;·&nbsp;
+    <strong>X button</strong> → full reset<br>
+    Wrist panel on left hand · look at palm to see modes
+  </div>
+</div><!-- end #app -->
 
 <script>
 // ================================================================
@@ -765,8 +1332,9 @@ bs('sl-r','sv-r',v=>CFG.rotSpd=v);
 bs('sl-hy','sv-hy',v=>CFG.hysteresis=Math.round(v));
 bs('sl-bt','sv-bt',v=>CFG.bleedThreshold=Math.round(v));
 
+// ── SURGICAL PLANNING MODE — always fully featured ──────────────
 const PNEUMO={
-  mode:'student',
+  mode:'surgical',
   session:{startTime:null,segmentsVisited:new Set(),wallContacts:0,score:100,
     pathologiesFound:new Set(),biopsyCount:0,annCount:0,bleedEvents:0,
     carinaSeen:false,carinalTime:null,pathMoves:0},
@@ -781,118 +1349,30 @@ const PAT={
   attackTarget:null,coughSpasm:0
 };
 
-// Per-segment wall contact tracking (v17)
 const wallContactsBySegment={};
 
-const MODE_PRESETS={
-  student:   {features:{labels:true, technicalData:true, scopeView:true, externalView:true, gestures:true, scoring:false,wallCollision:false,hints:true}},
-  resident:  {features:{labels:false,technicalData:true, scopeView:true, externalView:true, gestures:true, scoring:true, wallCollision:true, hints:false}},
-  patient:   {features:{labels:false,technicalData:false,scopeView:false,externalView:true, gestures:false,scoring:false,wallCollision:false,hints:false}},
-  instructor:{features:{labels:true, technicalData:true, scopeView:true, externalView:true, gestures:true, scoring:true, wallCollision:false,hints:false}}
-};
-
-const PINS={resident:'1234',instructor:'1234'};
-let _pinTarget='',_pinInput='';
-
-function selectMode(mode){
-  if(mode==='resident'||mode==='instructor'){
-    _pinTarget=mode;_pinInput='';updatePinDots();
-    document.getElementById('pin-title').textContent=mode.toUpperCase()+' MODE';
-    document.getElementById('pin-err').textContent='';
-    document.getElementById('pin-overlay').classList.add('show');
-  }else{applyMode(mode);}
-}
+// Mode stubs — surgical planning has no mode switching
+function selectMode(){}
 window.selectMode=selectMode;
-
-function pinKey(k){
-  if(k==='cancel'){document.getElementById('pin-overlay').classList.remove('show');return;}
-  if(k==='back'){_pinInput=_pinInput.slice(0,-1);updatePinDots();return;}
-  if(_pinInput.length>=4)return;
-  _pinInput+=k;updatePinDots();
-  if(_pinInput.length===4){
-    setTimeout(()=>{
-      if(_pinInput===PINS[_pinTarget]){
-        document.getElementById('pin-overlay').classList.remove('show');
-        applyMode(_pinTarget);
-      }else{
-        _pinInput='';updatePinDots();
-        document.getElementById('pin-err').textContent='Incorrect PIN';
-        setTimeout(()=>document.getElementById('pin-err').textContent='',1800);
-      }
-    },120);
-  }
-}
+function pinKey(){}
 window.pinKey=pinKey;
-
-function updatePinDots(){
-  for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);if(d)d.classList.toggle('fill',i<_pinInput.length);}
-}
-
-function applyMode(mode){
-  PNEUMO.mode=mode;
-  Object.assign(PNEUMO.features,MODE_PRESETS[mode].features);
+function updatePinDots(){}
+function applyMode(){
   PNEUMO.session={startTime:Date.now(),segmentsVisited:new Set(),wallContacts:0,
     score:100,pathologiesFound:new Set(),biopsyCount:0,annCount:0,bleedEvents:0,
     carinaSeen:false,carinalTime:null,pathMoves:0};
-  document.getElementById('mode-sel').style.display='none';
-  if(mode==='patient'){
-    document.getElementById('patient-shell').classList.add('show');
-    const ec=document.getElementById('c-ext'),pw=document.getElementById('pat-canvas-wrap');
-    pw.innerHTML='';pw.appendChild(ec);
-    ec.style.cssText='position:absolute;inset:0;width:100%;height:100%';
-    document.getElementById('doc-panel-toggle').classList.add('visible');
-    viewMode='overview';scope.segId=0;scope.t=0.05;
-    setPatientHUDVisible(false);
-    setTimeout(()=>{onResize();rExt.render(scene,camExt);},100);
-    showToast('Patient mode · Press D for doctor panel','info');
-  }else{
-    document.getElementById('splash').style.display='flex';
-    document.getElementById('app').style.display='none';
-    document.getElementById('doc-panel-toggle').classList.remove('visible');
-    const ec=document.getElementById('c-ext'),ev=document.getElementById('ext-view');
-    if(ec&&ev&&!ev.contains(ec)){ev.appendChild(ec);ec.style.cssText='width:100%;height:100%;display:block';}
-    setPatientHUDVisible(true);
-    applyModeUI(mode);
-  }
 }
-
-function setPatientHUDVisible(visible){
-  ['bro-hud','xhair','dbar','defl-ind','ct-overlay','scope-resistance-bar','resistance-label'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.style.display=visible?'':'none';
-  });
-}
-
-function applyModeUI(mode){
-  const badge=document.getElementById('mode-badge');
-  const icons={student:'🎓',resident:'🏥',instructor:'📋'};
-  const colors={student:'var(--blue)',resident:'var(--teal2)',instructor:'var(--amber)'};
-  if(badge){badge.innerHTML=(icons[mode]||'')+' '+mode.toUpperCase();badge.style.color=colors[mode]||'var(--text)';badge.style.borderColor='rgba(0,200,160,.3)';}
+function setPatientHUDVisible(){}
+function applyModeUI(){
   const show=(id,v)=>{const e=document.getElementById(id);if(e)e.style.display=v?'':'none';};
-  show('lp',PNEUMO.features.gestures);
-  show('bpanel-l',PNEUMO.features.gestures);
-  show('cam-p',PNEUMO.features.gestures);
-  document.getElementById('score-bar')?.classList.toggle('show',mode==='resident');
-  document.getElementById('instr-panel')?.classList.toggle('show',mode==='instructor');
+  show('lp',true);show('bpanel-l',true);show('cam-p',true);
   setTimeout(onResize,50);
 }
-
-function returnToModeSelect(){
-  if(PNEUMO.mode==='resident'&&PNEUMO.session.startTime){if(!confirm('End session and return to mode selection?'))return;}
-  document.getElementById('mode-sel').style.display='flex';
-  document.getElementById('app').style.display='none';
-  document.getElementById('splash').style.display='none';
-  document.getElementById('patient-shell').classList.remove('show');
-  document.getElementById('doc-panel').classList.remove('show');
-  document.getElementById('doc-panel-toggle').classList.remove('visible');
-}
+function returnToModeSelect(){}
 window.returnToModeSelect=returnToModeSelect;
 
 let docPanelOpen=false;
-function toggleDocPanel(){
-  docPanelOpen=!docPanelOpen;
-  document.getElementById('doc-panel').classList.toggle('show',docPanelOpen);
-  document.getElementById('doc-panel-toggle').textContent=docPanelOpen?'▶ DR':'◀ DR';
-}
+function toggleDocPanel(){}
 window.toggleDocPanel=toggleDocPanel;
 
 function setPatDisease(d){
@@ -911,7 +1391,7 @@ window.setPatDisease=setPatDisease;
 
 function setPatSeverity(v){
   PAT.severity=v/100;
-  document.getElementById('dp-sev-val').textContent=v+'%';
+  const _dsv=document.getElementById('dp-sev-val');if(_dsv)_dsv.textContent=v+'%';
   updateDiseaseUniforms();updateDocStatus();
 }
 window.setPatSeverity=setPatSeverity;
@@ -1650,6 +2130,7 @@ function drawCTOverlay(pos,tang){
 }
 
 function drawMap(){
+  const mg=document.getElementById("map-gen");if(mg){const seg=SEG_MAP[scope.segId];mg.textContent="Gen "+(seg?.gen??0)+" · "+(seg?.name?.split(" – ")[0]||"Trachea");}
   const can=document.getElementById('mapcan');if(!can)return;
   const ctx=can.getContext('2d'),W=can.width,H=can.height;
   ctx.clearRect(0,0,W,H);ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(0,0,W,H);
@@ -2079,7 +2560,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='1')setView('overview');
   if(e.key==='2')setView('dual');
   if(e.key==='3')setView('scope');
-  if(e.key==='d'||e.key==='D'){if(PNEUMO.mode==='patient')toggleDocPanel();}
+  if(e.key==='d'||e.key==='D'){toggleDocPanel();}
   if(e.key==='?'||e.key==='/'){const kb=document.getElementById('kb-hint');if(kb){kb.classList.toggle('show');kb.style.display=kb.classList.contains('show')?'block':'none';}}
   if(e.key==='ArrowUp'||e.key==='w')scope.velocity=CFG.scopeSpd/900;
   if(e.key==='ArrowDown'||e.key==='s')scope.velocity=-CFG.scopeSpd/1100;
@@ -2104,7 +2585,7 @@ window.togglePanel=togglePanel;
 document.getElementById('sbtn')?.addEventListener('click',async()=>{
   document.getElementById('splash').style.display='none';
   document.getElementById('app').style.display='flex';
-  setTimeout(()=>{onResize();setView('dual');setClinMode('nav');updateScope();drawMap();applyModeUI(PNEUMO.mode);rExt.render(scene,camExt);rBro.render(scene,camScope);},130);
+  setTimeout(()=>{onResize();setView('dual');setClinMode('nav');updateScope();drawMap();applyModeUI();rExt.render(scene,camExt);rBro.render(scene,camScope);},130);
   const dot=document.getElementById('sdot'),lbl=document.getElementById('sdot-l');
   if(dot)dot.className='sdot w';if(lbl)lbl.textContent='CAMERA';
   try{
@@ -2124,14 +2605,357 @@ document.getElementById('sbtn')?.addEventListener('click',async()=>{
 });
 
 setTimeout(()=>{
-  if(document.getElementById('app').style.display==='flex'||document.getElementById('patient-shell').classList.contains('show')){
+  if(document.getElementById('app').style.display==='flex'||document.getElementById('patient-shell')?.classList.contains('show')){
     onResize();
     if(viewMode!=='scope'&&document.getElementById('ext-view').clientWidth>1)rExt.render(scene,camExt);
     if(viewMode!=='overview'&&document.getElementById('bro-view').clientWidth>1)rBro.render(scene,camScope);
   }
 },2000);
 
-console.log('PNEUMO·VR v18 — Fusion Edition loaded · PBR + Resistance Physics + Mucosal Bleeding + v16 Gestures');
+
+// ================================================================
+// PHASE 2 — WebXR VR INTERACTION
+// Quest 2/3 · Controllers · Wrist Menu · Raycaster
+// ================================================================
+
+// ── 1. Enable WebXR on rBro (the immersive renderer) ────────────
+rBro.xr.enabled = true;
+
+// VRButton — inject into DOM when XR is supported
+(async () => {
+  if (!navigator.xr) return;
+  const supported = await navigator.xr.isSessionSupported('immersive-vr').catch(()=>false);
+  if (!supported) return;
+  const btn = document.createElement('button');
+  btn.id = 'vr-btn';
+  btn.textContent = 'ENTER VR';
+  Object.assign(btn.style, {
+    position:'fixed', bottom:'20px', right:'20px',
+    zIndex:'800', background:'transparent',
+    border:'1px solid #0ecfb0', color:'#0ecfb0',
+    fontFamily:"'Syne',sans-serif", fontWeight:'700',
+    fontSize:'10px', letterSpacing:'5px',
+    padding:'12px 28px', borderRadius:'3px',
+    cursor:'pointer', transition:'all .2s'
+  });
+  btn.onmouseenter = () => { btn.style.background='#0ecfb0'; btn.style.color='#080c10'; };
+  btn.onmouseleave = () => { btn.style.background='transparent'; btn.style.color='#0ecfb0'; };
+  btn.onclick = async () => {
+    if (rBro.xr.isPresenting) {
+      await rBro.xr.getSession()?.end();
+    } else {
+      const session = await navigator.xr.requestSession('immersive-vr', {
+        optionalFeatures: ['local-floor','bounded-floor','hand-tracking']
+      });
+      await rBro.xr.setSession(session);
+      btn.textContent = 'EXIT VR';
+      showToast('VR SESSION STARTED · Use controllers to navigate', 'info');
+    }
+  };
+  rBro.xr.addEventListener('sessionend', () => { btn.textContent = 'ENTER VR'; });
+  document.body.appendChild(btn);
+})();
+
+// ── 2. VR camera — fixed position, headset tracking takes over ──
+const vrCam = new THREE.PerspectiveCamera(110, 1, 0.003, 8);
+vrCam.position.set(0, 1.6, 3);
+
+// ── 3. Controllers ──────────────────────────────────────────────
+const xrCtrl0 = rBro.xr.getController(0); // left  — scope nav
+const xrCtrl1 = rBro.xr.getController(1); // right — deflection / pointer
+scene.add(xrCtrl0);
+scene.add(xrCtrl1);
+
+// Controller grip spaces (physical hand position)
+const grip0 = rBro.xr.getControllerGrip(0);
+const grip1 = rBro.xr.getControllerGrip(1);
+scene.add(grip0);
+scene.add(grip1);
+
+// Simple controller visual — thin glowing rod
+function makeCtrlVisual(color) {
+  const g = new THREE.Group();
+  const rod = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.006, 0.008, 0.12, 8),
+    new THREE.MeshStandardMaterial({ color, emissive:color, emissiveIntensity:0.6, metalness:0.7, roughness:0.3 })
+  );
+  rod.rotation.x = Math.PI / 2;
+  rod.position.z = -0.06;
+  g.add(rod);
+  // Ray line
+  const rayGeo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-1.2)
+  ]);
+  const ray = new THREE.Line(rayGeo, new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.35 }));
+  g.add(ray);
+  return g;
+}
+grip0.add(makeCtrlVisual(0x0ecfb0)); // teal — left
+grip1.add(makeCtrlVisual(0x8b5cf6)); // purple — right
+
+// ── 4. Raycaster for right controller ──────────────────────────
+const vrRaycaster = new THREE.Raycaster();
+const vrTempMatrix = new THREE.Matrix4();
+
+// ── 5. Input state ──────────────────────────────────────────────
+const vrInput = {
+  // thumbstick axes [0]=x [1]=y per controller
+  axes0: [0, 0], // left
+  axes1: [0, 0], // right
+  // buttons
+  trigger0: false, trigger1: false,
+  grip0: false,    grip1: false,
+  btnA: false,     btnX: false,
+  // grip hold timer for branch entry
+  gripHoldStart: null,
+};
+
+// Gamepad polling — called each frame while presenting
+function pollVRGamepads() {
+  const session = rBro.xr.getSession();
+  if (!session) return;
+  for (const src of session.inputSources) {
+    const gp = src.gamepad;
+    if (!gp) continue;
+    const hand = src.handedness; // 'left' | 'right'
+    if (hand === 'left') {
+      vrInput.axes0[0] = gp.axes[2] ?? 0; // thumbstick x
+      vrInput.axes0[1] = gp.axes[3] ?? 0; // thumbstick y
+      vrInput.grip0    = gp.buttons[1]?.pressed ?? false;
+      vrInput.btnX     = gp.buttons[4]?.pressed ?? false;
+      vrInput.trigger0 = gp.buttons[0]?.pressed ?? false;
+    } else {
+      vrInput.axes1[0] = gp.axes[2] ?? 0;
+      vrInput.axes1[1] = gp.axes[3] ?? 0;
+      vrInput.grip1    = gp.buttons[1]?.pressed ?? false;
+      vrInput.btnA     = gp.buttons[4]?.pressed ?? false;
+      vrInput.trigger1 = gp.buttons[0]?.pressed ?? false;
+    }
+  }
+}
+
+// ── 6. Apply controller input to scope state ────────────────────
+const VR_DEAD = 0.12; // thumbstick deadzone
+let _vrTrigger1Prev = false;
+let _vrBtnAPrev    = false;
+let _vrBtnXPrev    = false;
+let _vrGrip0Prev   = false;
+
+function applyVRInput() {
+  if (!rBro.xr.isPresenting) return;
+
+  // Left thumbstick Y → advance / retract
+  const ly = -vrInput.axes0[1]; // invert: push up = advance
+  if (Math.abs(ly) > VR_DEAD) {
+    scope.velocity = ly * CFG.scopeSpd / 900;
+  }
+
+  // Left thumbstick X → roll
+  const lx = vrInput.axes0[0];
+  if (Math.abs(lx) > VR_DEAD) {
+    scope.roll += lx * 0.04;
+  }
+
+  // Right thumbstick → deflection
+  const rx = vrInput.axes1[0];
+  const ry = -vrInput.axes1[1];
+  if (Math.abs(rx) > VR_DEAD) scope.deflH += (rx * CFG.deflMax / 180 - scope.deflH) * 0.18;
+  else scope.deflH *= 0.92;
+  if (Math.abs(ry) > VR_DEAD) scope.deflV += (ry * CFG.deflMax / 180 - scope.deflV) * 0.18;
+  else scope.deflV *= 0.92;
+  scope.deflH = Math.max(-1, Math.min(1, scope.deflH));
+  scope.deflV = Math.max(-1, Math.min(1, scope.deflV));
+
+  // Right trigger (rising edge) → confirm branch or fire action
+  if (vrInput.trigger1 && !_vrTrigger1Prev) {
+    if (scope.atBranch) enterBranch(1);
+    else fireAction();
+  }
+  _vrTrigger1Prev = vrInput.trigger1;
+
+  // Left trigger (rising edge) → enter left branch
+  if (vrInput.trigger0 && !_vrGrip0Prev) {
+    if (scope.atBranch) enterBranch(0);
+  }
+  _vrGrip0Prev = vrInput.trigger0;
+
+  // A button (rising edge) → cycle clinical mode
+  if (vrInput.btnA && !_vrBtnAPrev) {
+    const modes = ['nav','biopsy','measure','annotate'];
+    const idx = modes.indexOf(clinMode);
+    setClinMode(modes[(idx + 1) % modes.length]);
+  }
+  _vrBtnAPrev = vrInput.btnA;
+
+  // X button (rising edge) → full reset
+  if (vrInput.btnX && !_vrBtnXPrev) {
+    ext.mx=ext.my=ext.rx=ext.ry=0; ext.sc=1;
+    scope.segId=0; scope.t=.01; scope.roll=0;
+    scope.deflH=scope.deflV=0; scope.velocity=0;
+    scope.history=[{segId:0,t:.01}];
+    hideBranchSel(); applyExt(); updateScope();
+    showToast('FULL RESET','warn');
+  }
+  _vrBtnXPrev = vrInput.btnX;
+
+  // Right controller raycasting → pathology intersection
+  if (xrCtrl1.matrixWorld) {
+    vrTempMatrix.identity().extractRotation(xrCtrl1.matrixWorld);
+    vrRaycaster.ray.origin.setFromMatrixPosition(xrCtrl1.matrixWorld);
+    vrRaycaster.ray.direction.set(0, 0, -1).applyMatrix4(vrTempMatrix);
+    const targets = Object.values(pathoMeshes).map(p => p.mesh);
+    const hits = vrRaycaster.intersectObjects(targets, true);
+    if (hits.length > 0) {
+      const found = SEGS.find(s => s.pathology && pathoMeshes[s.pathology.id]?.mesh === hits[0].object.parent);
+      if (found && !PNEUMO.session.pathologiesFound.has(found.pathology.id)) {
+        PNEUMO.session.pathologiesFound.add(found.pathology.id);
+        showToast('PATHOLOGY FOUND · ' + found.pathology.label.split('\n')[0], 'success');
+      }
+    }
+  }
+}
+
+// ── 7. Wrist menu — 3D panel on left controller ─────────────────
+const WRIST_W = 0.22, WRIST_H = 0.10;
+const wristCanvas = document.createElement('canvas');
+wristCanvas.width = 512; wristCanvas.height = 230;
+const wristCtx = wristCanvas.getContext('2d');
+const wristTex = new THREE.CanvasTexture(wristCanvas);
+
+const wristMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(WRIST_W, WRIST_H),
+  new THREE.MeshBasicMaterial({ map: wristTex, transparent: true, side: THREE.DoubleSide, depthTest: false })
+);
+// Attach to left grip — offset to face surgeon when palm up
+wristMesh.position.set(0, 0.05, -0.03);
+wristMesh.rotation.x = -Math.PI / 3;
+grip0.add(wristMesh);
+
+const VR_MODES = [
+  { id:'nav',      label:'NAVIGATE', color:'#0ecfb0' },
+  { id:'biopsy',   label:'BIOPSY',   color:'#f0364a' },
+  { id:'measure',  label:'MEASURE',  color:'#f5a623' },
+  { id:'annotate', label:'ANNOTATE', color:'#8b5cf6' },
+];
+
+function drawWristMenu() {
+  const W = wristCanvas.width, H = wristCanvas.height;
+  wristCtx.clearRect(0, 0, W, H);
+  // Background
+  wristCtx.fillStyle = 'rgba(8,12,16,0.92)';
+  roundRect(wristCtx, 0, 0, W, H, 16);
+  wristCtx.fill();
+  // Border
+  wristCtx.strokeStyle = 'rgba(14,207,176,0.3)';
+  wristCtx.lineWidth = 2;
+  roundRect(wristCtx, 0, 0, W, H, 16);
+  wristCtx.stroke();
+  // Title
+  wristCtx.fillStyle = 'rgba(14,207,176,0.5)';
+  wristCtx.font = '500 22px sans-serif';
+  wristCtx.letterSpacing = '4px';
+  wristCtx.textAlign = 'center';
+  wristCtx.fillText('CLINICAL MODE', W/2, 38);
+  // Mode buttons
+  const btnW = 110, btnH = 54, gap = 10;
+  const totalW = VR_MODES.length * btnW + (VR_MODES.length-1) * gap;
+  const startX = (W - totalW) / 2;
+  VR_MODES.forEach((m, i) => {
+    const bx = startX + i * (btnW + gap);
+    const by = 60;
+    const active = clinMode === m.id;
+    wristCtx.fillStyle = active ? m.color + '33' : 'rgba(255,255,255,0.04)';
+    roundRect(wristCtx, bx, by, btnW, btnH, 8);
+    wristCtx.fill();
+    wristCtx.strokeStyle = active ? m.color : 'rgba(255,255,255,0.1)';
+    wristCtx.lineWidth = active ? 2 : 1;
+    roundRect(wristCtx, bx, by, btnW, btnH, 8);
+    wristCtx.stroke();
+    wristCtx.fillStyle = active ? m.color : 'rgba(200,216,232,0.4)';
+    wristCtx.font = (active ? '700' : '500') + ' 20px sans-serif';
+    wristCtx.textAlign = 'center';
+    wristCtx.fillText(m.label, bx + btnW/2, by + btnH/2 + 7);
+  });
+  // Segment info
+  const seg = SEG_MAP[scope.segId];
+  wristCtx.fillStyle = 'rgba(200,216,232,0.3)';
+  wristCtx.font = '400 18px sans-serif';
+  wristCtx.textAlign = 'center';
+  wristCtx.fillText((seg?.name || 'TRACHEA').toUpperCase() + '  ·  ' + Math.round(scope.depth) + 'mm', W/2, H - 14);
+  wristTex.needsUpdate = true;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+// Only show wrist menu in VR
+rBro.xr.addEventListener('sessionstart', () => {
+  wristMesh.visible = true;
+  const vs = document.getElementById('vr-status');
+  const vl = document.getElementById('vr-status-lbl');
+  if (vs) vs.classList.add('active');
+  if (vl) vl.textContent = 'VR ACTIVE';
+  // Show controller hint for 6 seconds
+  const hint = document.getElementById('vr-hint');
+  if (hint) { hint.classList.add('show'); setTimeout(() => hint.classList.remove('show'), 6000); }
+});
+rBro.xr.addEventListener('sessionend', () => {
+  wristMesh.visible = false;
+  const vs = document.getElementById('vr-status');
+  const vl = document.getElementById('vr-status-lbl');
+  if (vs) vs.classList.remove('active');
+  if (vl) vl.textContent = 'VR READY';
+});
+wristMesh.visible = false;
+
+// ── 8. Override animate loop to use setAnimationLoop ────────────
+// Cancel existing rAF-based loop and replace with XR-compatible one
+// The original animate() is called once at the end of the script —
+// we patch the render calls here to use setAnimationLoop for rBro.
+const _origAnimate = animate; // keep reference
+let _xrLoopStarted = false;
+rBro.xr.addEventListener('sessionstart', () => {
+  if (_xrLoopStarted) return;
+  _xrLoopStarted = true;
+  rBro.setAnimationLoop((time, frame) => {
+    if (!rBro.xr.isPresenting) return;
+    pollVRGamepads();
+    applyVRInput();
+    drawWristMenu();
+    // Run scope physics (same as desktop animate — just the scope part)
+    const t = time * 0.001;
+    if (Math.abs(scope.velocity) > 0.0001) {
+      if (scope.velocity > 0) advance(scope.velocity);
+      else retract(-scope.velocity);
+      scope.velocity *= scope.velocityDecay;
+    }
+    updateScope();
+    // Render scene from VR camera (headset takes over projection)
+    rBro.render(scene, vrCam);
+  });
+});
+rBro.xr.addEventListener('sessionend', () => {
+  rBro.setAnimationLoop(null);
+  _xrLoopStarted = false;
+});
+
+console.log('PNEUMO·VR Phase 2 — WebXR controllers loaded');
+// ================================================================
+// END PHASE 2
+// ================================================================
+
+console.log('PNEUMO·VR v20 — Surgical Planning Edition loaded');
 </script>
 </body>
 </html>
